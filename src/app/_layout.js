@@ -51,18 +51,21 @@ function RootNavigator() {
     };
   }, [isDark, colors]);
 
+  const loading = status === 'loading';
   const offline = status === 'offline';
 
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {/* Stack.Protected pilnuje dostępu: zalogowany użytkownik widzi aplikację,
-          a niezalogowany — tylko ekrany logowania i rejestracji. */}
+          a niezalogowany — tylko ekrany logowania i rejestracji. Dopóki sprawdzamy sesję
+          (ekran ładowania), nie przekierowujemy nigdzie — dzięki temu odświeżenie strony
+          lub otwarcie linku, np. /currency/USD, zostaje na właściwym ekranie. */}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-        <Stack.Protected guard={!offline && Boolean(user)} redirectTo={offline ? '/offline' : '/login'}>
+        <Stack.Protected guard={loading || (!offline && Boolean(user))} redirectTo={offline ? '/offline' : '/login'}>
           <Stack.Screen name="(app)" />
         </Stack.Protected>
-        <Stack.Protected guard={!offline && !user} redirectTo={offline ? '/offline' : '/'}>
+        <Stack.Protected guard={loading || (!offline && !user)} redirectTo={offline ? '/offline' : '/'}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
         <Stack.Protected guard={offline} redirectTo="/">

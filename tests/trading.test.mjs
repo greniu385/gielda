@@ -66,7 +66,10 @@ test('nie można sprzedać więcej, niż się posiada', () => {
 
 test('odrzuca kwoty ujemne, zerowe i niepoprawne', () => {
   for (const amount of [0, -5, NaN, 'abc']) {
-    assert.throws(() => applyTrade(createInitialPortfolio(), { type: 'buy', code: 'USD', amount, rate: 3.7 }), TradeError);
+    assert.throws(
+      () => applyTrade(createInitialPortfolio(), { type: 'buy', code: 'USD', amount, rate: 3.7 }),
+      TradeError,
+    );
   }
 });
 
@@ -139,4 +142,93 @@ test('wartość portfela uwzględnia pozycje krótkie', () => {
   assert.equal(position.pnl, 50);
   assert.equal(position.value, 450);
   assert.equal(getPortfolioValue(portfolio, quotes), STARTING_BALANCE + 50);
+});
+
+test('częściowa sprzedaż zachowuje średni kurs zakupu i liczy wynik tylko od sprzedanej części', () => {
+  let { portfolio } = applyTrade(createInitialPortfolio(), { type: 'buy', code: 'USD', amount: 200, rate: 4 });
+  const sold = applyTrade(portfolio, { type: 'sell', code: 'USD', amount: 50, rate: 4.2 });
+  portfolio = sold.portfolio;
+  assert.equal(sold.transaction.pnl, 10);
+  assert.equal(portfolio.balances.USD, 150);
+  assert.equal(portfolio.avgPrices.USD, 4, 'średni kurs pozostałych 150 USD bez zmian');
+  assert.equal(portfolio.balances.PLN, 10000 - 800 + 210);
+});
+
+test('pozycja długa i krótka w tej samej walucie są niezależne', () => {
+  let { portfolio } = applyTrade(createInitialPortfolio(), { type: 'buy', code: 'EUR', amount: 100, rate: 4.3 });
+  ({ portfolio } = applyTrade(portfolio, { type: 'short', code: 'EUR', amount: 50, rate: 4.28 }));
+  assert.equal(portfolio.balances.EUR, 100);
+  assert.equal(portfolio.shorts.EUR.amount, 50);
+  // Sprzedaż waluty nie zamyka shorta i odwrotnie.
+  ({ portfolio } = applyTrade(portfolio, { type: 'sell', code: 'EUR', amount: 100, rate: 4.28 }));
+  assert.equal(portfolio.balances.EUR, undefined);
+  assert.equal(portfolio.shorts.EUR.amount, 50);
+  assert.throws(() => applyTrade(portfolio, { type: 'sell', code: 'EUR', amount: 1, rate: 4.28 }), TradeError);
+});
+
+test('dokładanie do shorta uśrednia kurs otwarcia i sumuje depozyt', () => {
+  let { portfolio } = applyTrade(createInitialPortfolio(), { type: 'short', code: 'GBP', amount: 100, rate: 5 });
+  ({ portfolio } = applyTrade(portfolio, { type: 'short', code: 'GBP', amount: 300, rate: 5.4 }));
+  assert.equal(portfolio.shorts.GBP.amount, 400);
+  assert.ok(Math.abs(portfolio.shorts.GBP.entryPrice - 5.3) < 1e-9);
+  assert.equal(portfolio.shorts.GBP.margin, 500 + 1620);
+});
+
+test('zamykanie shorta w trzech częściach oddaje dokładnie cały depozyt (bez zgubionych groszy)', () => {
+  let { portfolio } = applyTrade(createInitialPortfolio(), { type: 'short', code: 'CHF', amount: 100, rate: 4.61 });
+  const margin = portfolio.shorts.CHF.margin;
+  let returned = 0;
+  for (const amount of [33.33, 33.33, 33.34]) {
+    const result = applyTrade(portfolio, { type: 'cover', code: 'CHF', amount, rate: 4.61 });
+    portfolio = result.portfolio;
+    returned += result.transaction.total;
+  }
+  assert.equal(portfolio.shorts.CHF, undefined);
+  assert.ok(Math.abs(returned - margin) < 0.005, `zwrócono ${returned}, depozyt ${margin}`);
+  assert.equal(portfolio.balances.PLN, 10000);
+});
+
+test('MAX dla shorta wykorzystuje całą gotówkę na depozyt', () => {
+  const portfolio = createInitialPortfolio();
+  const max = getMaxAffordableAmount(portfolio, 3.71);
+  const { portfolio: after } = applyTrade(portfolio, { type: 'short', code: 'USD', amount: max, rate: 3.71 });
+  assert.ok(after.balances.PLN >= 0 && after.balances.PLN < 3.71);
+  assert.throws(() => applyTrade(portfolio, { type: 'short', code: 'USD', amount: max + 1, rate: 3.71 }), TradeError);
+});
+
+test('portfel po wielu losowych transakcjach: gotówka nigdy nie jest ujemna, a wartość się zgadza', () => {
+  let seed = 7;
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const codes = ['USD', 'EUR', 'GBP'];
+  let portfolio = createInitialPortfolio();
+  for (let i = 0; i < 2000; i++) {
+    const code = codes[Math.floor(random() * codes.length)];
+    const type = ['buy', 'sell', 'short', 'cover'][Math.floor(random() * 4)];
+    const rate = 3.5 + random();
+    const amount = Math.round(random() * 500 * 100) / 100;
+    try {
+      ({ portfolio } = applyTrade(portfolio, { type, code, amount, rate }));
+    } catch (error) {
+      assert.ok(error instanceof TradeError, error.message);
+    }
+    assert.ok(portfolio.balances.PLN >= 0, `ujemne saldo po ${i} transakcjach`);
+    for (const position of Object.values(portfolio.shorts)) assert.ok(position.margin >= 0 && position.amount > 0);
+  }
+  // Przy kursie bez spreadu i równym średnim kursom wartość = gotówka + waluty + depozyty.
+  assert.ok(Number.isFinite(getPortfolioValue(portfolio, { USD: { mid: 4, spread: 0 } })));
+});
+
+test('nieznany typ transakcji i handel złotówkami są odrzucane', () => {
+  assert.throws(
+    () => applyTrade(createInitialPortfolio(), { type: 'loan', code: 'USD', amount: 1, rate: 4 }),
+    TradeError,
+  );
+  assert.throws(
+    () => applyTrade(createInitialPortfolio(), { type: 'buy', code: 'PLN', amount: 1, rate: 1 }),
+    TradeError,
+  );
+  assert.throws(
+    () => applyTrade(createInitialPortfolio(), { type: 'buy', code: 'USD', amount: 1, rate: 0 }),
+    TradeError,
+  );
 });

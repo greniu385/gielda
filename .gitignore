@@ -44,3 +44,7 @@ server/data/
 # generated native folders
 /ios
 /android
+
+# wyniki testów end-to-end (Playwright)
+test-results/
+playwright-report/

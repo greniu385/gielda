@@ -80,7 +80,10 @@ test('kupno i sprzedaż zapisują się w bazie', async () => {
   assert.equal(buy.data.portfolio.balances.PLN, 9620);
   assert.equal(buy.data.portfolio.balances.USD, 100);
 
-  const sell = await call('POST', '/api/trades', { token, body: { type: 'sell', code: 'USD', amount: 100, rate: 3.9 } });
+  const sell = await call('POST', '/api/trades', {
+    token,
+    body: { type: 'sell', code: 'USD', amount: 100, rate: 3.9 },
+  });
   assert.equal(sell.status, 201);
   assert.equal(sell.data.transaction.pnl, 10);
   assert.equal(sell.data.portfolio.balances.USD, undefined);
@@ -93,11 +96,17 @@ test('kupno i sprzedaż zapisują się w bazie', async () => {
 });
 
 test('serwer odrzuca transakcje bez pokrycia i z absurdalnym kursem', async () => {
-  const tooMuch = await call('POST', '/api/trades', { token, body: { type: 'buy', code: 'EUR', amount: 1e6, rate: 4.3 } });
+  const tooMuch = await call('POST', '/api/trades', {
+    token,
+    body: { type: 'buy', code: 'EUR', amount: 1e6, rate: 4.3 },
+  });
   assert.equal(tooMuch.status, 400);
   assert.match(tooMuch.data.error, /Niewystarczające środki/);
 
-  const fakeRate = await call('POST', '/api/trades', { token, body: { type: 'sell', code: 'USD', amount: 1, rate: 1000 } });
+  const fakeRate = await call('POST', '/api/trades', {
+    token,
+    body: { type: 'sell', code: 'USD', amount: 1, rate: 1000 },
+  });
   assert.equal(fakeRate.status, 400);
 
   const { data } = await call('GET', '/api/portfolio', { token });
@@ -105,14 +114,20 @@ test('serwer odrzuca transakcje bez pokrycia i z absurdalnym kursem', async () =
 });
 
 test('gra na spadek: otwarcie i zamknięcie krótkiej pozycji', async () => {
-  const open = await call('POST', '/api/trades', { token, body: { type: 'short', code: 'EUR', amount: 100, rate: 4.3 } });
+  const open = await call('POST', '/api/trades', {
+    token,
+    body: { type: 'short', code: 'EUR', amount: 100, rate: 4.3 },
+  });
   assert.equal(open.status, 201);
   assert.deepEqual(open.data.portfolio.shorts.EUR, { amount: 100, entryPrice: 4.3, margin: 430 });
 
   const portfolio = await call('GET', '/api/portfolio', { token });
   assert.equal(portfolio.data.portfolio.shorts.EUR.margin, 430, 'pozycja zapisana w bazie');
 
-  const cover = await call('POST', '/api/trades', { token, body: { type: 'cover', code: 'EUR', amount: 100, rate: 4.2 } });
+  const cover = await call('POST', '/api/trades', {
+    token,
+    body: { type: 'cover', code: 'EUR', amount: 100, rate: 4.2 },
+  });
   assert.equal(cover.status, 201);
   assert.equal(cover.data.transaction.pnl, 10);
   assert.equal(cover.data.portfolio.shorts.EUR, undefined);

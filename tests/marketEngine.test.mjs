@@ -82,3 +82,43 @@ test('wiadomość o złotym wpływa na wszystkie waluty', () => {
   }
   assert.fail('nie znaleziono wiadomości dotyczącej złotego');
 });
+
+test('tryb "Burzliwy" porusza kursami mocniej niż "Spokojny"', () => {
+  const averageMove = (volatility) => {
+    const rng = seededRandom(42);
+    let market = createMarket({ rng });
+    let total = 0;
+    for (let i = 0; i < 1000; i++) {
+      const next = tickMarket(market, { volatility, rng });
+      total += Math.abs(Math.log(next.quotes.USD.mid / market.quotes.USD.mid));
+      market = next;
+    }
+    return total / 1000;
+  };
+  const calm = averageMove('calm');
+  const wild = averageMove('wild');
+  assert.ok(wild > calm * 2, `burzliwy ${wild}, spokojny ${calm}`);
+});
+
+test('wiadomość o konkretnej walucie zmienia głównie tę walutę', () => {
+  // Szukamy wiadomości dotyczącej tylko USD i sprawdzamy jej wpływ na kursy.
+  for (let seed = 0; seed < 500; seed++) {
+    const event = createNewsEvent(1, seededRandom(seed));
+    if (Object.keys(event.impacts).join() !== 'USD') continue;
+    assert.ok(Math.abs(event.impacts.USD) >= 0.006 && Math.abs(event.impacts.USD) <= 0.02);
+    assert.equal(event.sentiment, event.impacts.USD > 0 ? 'up' : 'down');
+    return;
+  }
+  assert.fail('nie znaleziono wiadomości o USD');
+});
+
+test('historia kursu nie przekracza limitu, a max/min sesji obejmują kurs bieżący', () => {
+  const rng = seededRandom(9);
+  let market = createMarket({ rng });
+  for (let i = 0; i < 300; i++) market = tickMarket(market, { rng });
+  for (const quote of Object.values(market.quotes)) {
+    assert.ok(quote.history.length <= HISTORY_LENGTH);
+    assert.ok(quote.high >= quote.mid && quote.low <= quote.mid);
+    assert.equal(quote.history[quote.history.length - 1], quote.mid);
+  }
+});

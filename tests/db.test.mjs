@@ -29,8 +29,12 @@ test('migracja starej bazy: zachowuje transakcje i pozwala na krótką sprzedaż
 
     const db = openDatabase(path);
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n, 1);
-    db.prepare("INSERT INTO transactions (user_id, type, currency, amount, rate, total) VALUES (1, 'short', 'USD', 5, 4, 20)").run();
-    const index = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_transactions_user'").get();
+    db.prepare(
+      "INSERT INTO transactions (user_id, type, currency, amount, rate, total) VALUES (1, 'short', 'USD', 5, 4, 20)",
+    ).run();
+    const index = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_transactions_user'")
+      .get();
     assert.ok(index, 'indeks istnieje po migracji');
     assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name = 'short_positions'").get());
     db.close();

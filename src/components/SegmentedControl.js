@@ -18,7 +18,7 @@ export default function SegmentedControl({ options, value, onChange, activeColor
             key={option.value}
             onPress={() => onChange(option.value)}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            aria-selected={active}
             style={({ hovered }) => [
               styles.segment,
               active ? { backgroundColor: activeBg } : hovered && { backgroundColor: colors.elevated },

@@ -35,10 +35,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "test": "node --disable-warning=ExperimentalWarning --import ./scripts/register-loader.mjs --test tests/*.test.mjs",
-    "lint": "expo lint"
+    "lint": "eslint .",
+    "test:e2e": "playwright test"
   },
   "private": true,
   "devDependencies": {
+    "@playwright/test": "~1.63.0",
     "concurrently": "~10.0.5",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4"

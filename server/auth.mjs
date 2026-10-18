@@ -1,6 +1,8 @@
 // Rejestracja, logowanie i sesje użytkowników.
+import { Buffer } from 'node:buffer';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
+import { inTransaction } from './db.mjs';
 import { createPortfolio } from './portfolio.mjs';
 import { HttpError } from './errors.mjs';
 import { validateDisplayName, validateEmail, validatePassword } from '../src/utils/validation.js';
@@ -42,14 +44,17 @@ export function registerUser(db, { displayName = '', email = '', password = '' }
   const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim());
   if (exists) throw new HttpError(409, 'Konto z tym adresem e-mail już istnieje.');
 
-  const { lastInsertRowid } = db
-    .prepare('INSERT INTO users (email, display_name, password_hash) VALUES (?, ?, ?)')
-    .run(email.trim(), displayName.trim(), hashPassword(password));
-  const userId = Number(lastInsertRowid);
-  createPortfolio(db, userId);
-
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-  return { token: createSession(db, userId), user: toPublicUser(user) };
+  const passwordHash = hashPassword(password);
+  // Konto, portfel startowy i sesja powstają razem (transakcja SQL) — nie zostanie konto bez portfela.
+  return inTransaction(db, () => {
+    const { lastInsertRowid } = db
+      .prepare('INSERT INTO users (email, display_name, password_hash) VALUES (?, ?, ?)')
+      .run(email.trim(), displayName.trim(), passwordHash);
+    const userId = Number(lastInsertRowid);
+    createPortfolio(db, userId);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    return { token: createSession(db, userId), user: toPublicUser(user) };
+  });
 }
 
 export function loginUser(db, { email = '', password = '' }) {

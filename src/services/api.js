@@ -4,10 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'gielda.token';
 
-// Adres serwera. W przeglądarce domyślnie ten sam komputer, port 4000.
+// Adres serwera:
+// - zbudowana strona (npm run preview) jest udostępniana przez sam serwer, więc łączy się
+//   z adresem, z którego została otwarta (dowolny port),
+// - w trybie deweloperskim (npm start) strona działa na porcie 8081, a serwer na 4000.
 // Można go zmienić w pliku .env: EXPO_PUBLIC_API_URL=http://192.168.1.10:4000
 function defaultApiUrl() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (!__DEV__) return window.location.origin;
     return `${window.location.protocol}//${window.location.hostname}:4000`;
   }
   return 'http://localhost:4000';

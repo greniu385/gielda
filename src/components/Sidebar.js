@@ -59,7 +59,7 @@ export default function Sidebar() {
               key={item.href}
               onPress={() => router.navigate(item.href)}
               accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
+              aria-selected={active}
               style={({ hovered }) => [
                 styles.navItem,
                 {
