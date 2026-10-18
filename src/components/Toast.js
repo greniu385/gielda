@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NATIVE_DRIVER } from '../utils/animation';
+import { fonts } from '../theme/fonts';
 
 const ToastContext = createContext(null);
 
@@ -26,7 +27,9 @@ export function ToastProvider({ children }) {
       setToast({ message, type, key: Date.now() });
       Animated.spring(anim, { toValue: 1, useNativeDriver: NATIVE_DRIVER, friction: 8 }).start();
       timer.current = setTimeout(() => {
-        Animated.timing(anim, { toValue: 0, duration: 220, useNativeDriver: NATIVE_DRIVER }).start(() => setToast(null));
+        Animated.timing(anim, { toValue: 0, duration: 220, useNativeDriver: NATIVE_DRIVER }).start(() =>
+          setToast(null),
+        );
       }, 2600);
     },
     [anim],
@@ -52,7 +55,9 @@ export function ToastProvider({ children }) {
               borderColor: accent,
               shadowColor: colors.shadow,
               opacity: anim,
-              transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [isWide ? 40 : -40, 0] }) }],
+              transform: [
+                { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [isWide ? 40 : -40, 0] }) },
+              ],
             },
           ]}
         >
@@ -78,7 +83,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     shadowOpacity: 0.2,
     shadowRadius: 18,
@@ -88,5 +93,5 @@ const styles = StyleSheet.create({
   // Na telefonie powiadomienie wysuwa się u góry, na komputerze — w prawym dolnym rogu.
   toastNarrow: { left: 16, right: 16 },
   toastWide: { right: 28, width: 420 },
-  text: { flex: 1, fontSize: 15, fontWeight: '600' },
+  text: { flex: 1, fontSize: 15, fontFamily: fonts.semibold },
 });

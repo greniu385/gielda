@@ -38,11 +38,22 @@ const SCHEMA = `
     PRIMARY KEY (user_id, currency)
   );
 
-  -- Historia transakcji kupna i sprzedaży.
+  -- Pozycje krótkie (gra na spadek): ilość "pożyczonej" waluty, średni kurs otwarcia
+  -- i zablokowany depozyt w PLN.
+  CREATE TABLE IF NOT EXISTS short_positions (
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    currency    TEXT    NOT NULL,
+    amount      REAL    NOT NULL,
+    entry_price REAL    NOT NULL,
+    margin      REAL    NOT NULL,
+    PRIMARY KEY (user_id, currency)
+  );
+
+  -- Historia transakcji: kupno, sprzedaż, otwarcie i zamknięcie pozycji krótkiej.
   CREATE TABLE IF NOT EXISTS transactions (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type       TEXT    NOT NULL CHECK (type IN ('buy', 'sell')),
+    type       TEXT    NOT NULL CHECK (type IN ('buy', 'sell', 'short', 'cover')),
     currency   TEXT    NOT NULL,
     amount     REAL    NOT NULL,
     rate       REAL    NOT NULL,
@@ -59,8 +70,23 @@ export function openDatabase(path) {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec('PRAGMA journal_mode = WAL;');
+  migrateTransactionTypes(db);
   db.exec(SCHEMA);
   return db;
+}
+
+// Bazy utworzone przed dodaniem krótkiej sprzedaży pozwalały tylko na typy 'buy' i 'sell'.
+// SQLite nie zmienia ograniczeń CHECK, więc przebudowujemy tabelę, zachowując dane.
+function migrateTransactionTypes(db) {
+  const table = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'transactions'").get();
+  if (!table || table.sql.includes("'cover'")) return;
+  inTransaction(db, () => {
+    db.exec('DROP INDEX IF EXISTS idx_transactions_user');
+    db.exec('ALTER TABLE transactions RENAME TO transactions_old');
+    db.exec(SCHEMA);
+    db.exec('INSERT INTO transactions SELECT * FROM transactions_old');
+    db.exec('DROP TABLE transactions_old');
+  });
 }
 
 // Wykonuje funkcję w transakcji SQL: albo zapisze się wszystko, albo nic.

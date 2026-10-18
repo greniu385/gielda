@@ -2,7 +2,7 @@
 // Obliczenia (saldo, średni kurs, zysk) wykonuje ten sam moduł co aplikacja: src/logic/trading.js.
 import { inTransaction } from './db.mjs';
 import { HttpError } from './errors.mjs';
-import { BASE_CURRENCY, TradeError, applyTrade, createInitialPortfolio } from '../src/logic/trading.js';
+import { BASE_CURRENCY, TRADE_TYPES, TradeError, applyTrade, createInitialPortfolio } from '../src/logic/trading.js';
 import { getCurrency } from '../src/simulation/currencies.js';
 
 // Kurs przysłany przez aplikację nie może odbiegać od kursu bazowego bardziej niż 2×
@@ -27,9 +27,15 @@ export function loadPortfolio(db, userId) {
     if (row.avg_price !== null) avgPrices[row.currency] = row.avg_price;
   }
 
+  const shorts = {};
+  for (const row of db.prepare('SELECT * FROM short_positions WHERE user_id = ?').all(userId)) {
+    shorts[row.currency] = { amount: row.amount, entryPrice: row.entry_price, margin: row.margin };
+  }
+
   return {
     balances,
     avgPrices,
+    shorts,
     realizedPnl: summary.realized_pnl,
     tradesCount: summary.trades_count,
     startingBalance: summary.starting_balance,
@@ -43,9 +49,18 @@ function writeBalances(db, userId, portfolio) {
     const avgPrice = currency === BASE_CURRENCY ? null : (portfolio.avgPrices[currency] ?? null);
     insert.run(userId, currency, amount, avgPrice);
   }
+
+  db.prepare('DELETE FROM short_positions WHERE user_id = ?').run(userId);
+  const insertShort = db.prepare(
+    'INSERT INTO short_positions (user_id, currency, amount, entry_price, margin) VALUES (?, ?, ?, ?, ?)',
+  );
+  for (const [currency, position] of Object.entries(portfolio.shorts ?? {})) {
+    insertShort.run(userId, currency, position.amount, position.entryPrice, position.margin);
+  }
 }
 
 function validateOrder({ type, code, amount, rate }) {
+  if (!TRADE_TYPES.includes(type)) throw new HttpError(400, 'Nieznany typ transakcji.');
   const currency = getCurrency(String(code));
   if (!currency) throw new HttpError(400, 'Nieznana waluta.');
   const numericRate = Number(rate);

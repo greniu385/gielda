@@ -10,12 +10,8 @@ import { getErrorMessage } from '../../services/authService';
 import { STARTING_BALANCE } from '../../logic/trading';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { formatMoney } from '../../utils/format';
-import {
-  getPasswordStrength,
-  validateDisplayName,
-  validateEmail,
-  validatePassword,
-} from '../../utils/validation';
+import { getPasswordStrength, validateDisplayName, validateEmail, validatePassword } from '../../utils/validation';
+import { fonts } from '../../theme/fonts';
 
 const STRENGTH_LABELS = ['Za krótkie', 'Słabe', 'Średnie', 'Silne', 'Bardzo silne'];
 
@@ -145,9 +141,9 @@ const styles = StyleSheet.create({
   meter: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, paddingHorizontal: 4 },
   meterBars: { flex: 1, flexDirection: 'row', gap: 4 },
   meterBar: { flex: 1, height: 4, borderRadius: 2 },
-  meterLabel: { fontSize: 12, fontWeight: '700', minWidth: 80, textAlign: 'right' },
-  formError: { borderRadius: 12, padding: 12, marginBottom: 14 },
-  formErrorText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  footerText: { fontSize: 15 },
-  link: { fontWeight: '700' },
+  meterLabel: { fontSize: 12, fontFamily: fonts.bold, minWidth: 80, textAlign: 'right' },
+  formError: { borderRadius: 8, padding: 12, marginBottom: 14 },
+  formErrorText: { fontSize: 14, fontFamily: fonts.semibold, textAlign: 'center' },
+  footerText: { fontSize: 15, fontFamily: fonts.regular },
+  link: { fontFamily: fonts.bold },
 });

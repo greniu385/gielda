@@ -5,6 +5,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useAppTheme } from '../theme/ThemeContext';
 import PageTitle from './PageTitle';
 import ThemeToggle from './ThemeToggle';
+import { fonts } from '../theme/fonts';
 
 export default function ScreenHeader({ title, subtitle, onBack, right, pageTitle }) {
   const { colors } = useAppTheme();
@@ -53,8 +54,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   titles: { flex: 1 },
-  subtitle: { fontSize: 13, fontWeight: '500', marginBottom: 2 },
-  title: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, fontFamily: fonts.medium, marginBottom: 2 },
+  title: { fontSize: 28, fontFamily: fonts.bold, letterSpacing: -0.5 },
   titleWide: { fontSize: 32 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

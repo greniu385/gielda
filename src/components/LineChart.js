@@ -4,6 +4,7 @@ import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-nativ
 
 import { useAppTheme } from '../theme/ThemeContext';
 import { formatRate } from '../utils/format';
+import { fonts } from '../theme/fonts';
 
 // Buduje ścieżkę SVG z listy punktów.
 function buildPath(data, width, height, padding, rightPadding) {
@@ -12,10 +13,7 @@ function buildPath(data, width, height, padding, rightPadding) {
   const range = max - min || 1;
   const stepX = data.length > 1 ? (width - rightPadding) / (data.length - 1) : 0;
 
-  const points = data.map((value, i) => [
-    i * stepX,
-    padding + (1 - (value - min) / range) * (height - padding * 2),
-  ]);
+  const points = data.map((value, i) => [i * stepX, padding + (1 - (value - min) / range) * (height - padding * 2)]);
   const line = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
   const lastX = points[points.length - 1][0];
   const area = `${line} L${lastX},${height} L0,${height} Z`;
@@ -69,7 +67,9 @@ export default function LineChart({ data, height = 200, color, showLabels = true
           {showLabels ? (
             <>
               <Text style={[styles.label, styles.top, { color: colors.textMuted }]}>max {formatRate(chart.max)}</Text>
-              <Text style={[styles.label, styles.bottom, { color: colors.textMuted }]}>min {formatRate(chart.min)}</Text>
+              <Text style={[styles.label, styles.bottom, { color: colors.textMuted }]}>
+                min {formatRate(chart.min)}
+              </Text>
             </>
           ) : null}
         </>
@@ -79,7 +79,7 @@ export default function LineChart({ data, height = 200, color, showLabels = true
 }
 
 const styles = StyleSheet.create({
-  label: { position: 'absolute', left: 4, fontSize: 11, fontWeight: '600' },
+  label: { position: 'absolute', left: 4, fontSize: 11, fontFamily: fonts.mono },
   top: { top: 0 },
   bottom: { bottom: 0 },
 });

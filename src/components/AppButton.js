@@ -1,19 +1,20 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/fonts';
 
-// Przycisk w kilku wariantach: primary (gradient), secondary, success, danger, ghost.
+// Przycisk w kilku wariantach: primary (kolor akcentu), secondary, success, danger, ghost.
 export default function AppButton({ title, onPress, variant = 'primary', icon, loading, disabled, style, small }) {
   const { colors } = useAppTheme();
   const inactive = disabled || loading;
 
   const palette = {
-    primary: { bg: null, fg: colors.onPrimary },
+    primary: { bg: colors.primary, fg: colors.onPrimary },
     secondary: { bg: colors.surfaceAlt, fg: colors.text, border: colors.border, hoverBg: colors.elevated },
-    success: { bg: colors.up, fg: '#FFFFFF' },
-    danger: { bg: colors.down, fg: '#FFFFFF' },
+    success: { bg: colors.up, fg: colors.onAccent },
+    danger: { bg: colors.down, fg: colors.onAccent },
+    short: { bg: colors.short, fg: colors.onAccent },
     dangerSoft: { bg: colors.downSoft, fg: colors.down },
     ghost: { bg: 'transparent', fg: colors.primary, hoverBg: colors.primarySoft },
   }[variant];
@@ -39,7 +40,7 @@ export default function AppButton({ title, onPress, variant = 'primary', icon, l
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={({ pressed, hovered }) => [
         styles.base,
-        palette.bg !== null && { backgroundColor: hovered && palette.hoverBg ? palette.hoverBg : palette.bg },
+        { backgroundColor: hovered && palette.hoverBg ? palette.hoverBg : palette.bg },
         palette.border && { borderWidth: StyleSheet.hairlineWidth, borderColor: palette.border },
         {
           opacity: disabled ? 0.45 : pressed ? 0.85 : hovered && !palette.hoverBg ? 0.9 : 1,
@@ -48,20 +49,13 @@ export default function AppButton({ title, onPress, variant = 'primary', icon, l
         style,
       ]}
     >
-      {variant === 'primary' ? (
-        <LinearGradient colors={colors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
-          {content}
-        </LinearGradient>
-      ) : (
-        content
-      )}
+      {content}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: 16, overflow: 'hidden' },
-  gradient: { borderRadius: 16 },
+  base: { borderRadius: 10, overflow: 'hidden' },
   inner: {
     minHeight: 54,
     paddingHorizontal: 20,
@@ -71,6 +65,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   innerSmall: { minHeight: 40, paddingHorizontal: 14 },
-  label: { fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  label: { fontSize: 16, fontFamily: fonts.bold, letterSpacing: 0.2 },
   labelSmall: { fontSize: 14 },
 });

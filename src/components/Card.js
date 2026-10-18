@@ -25,7 +25,7 @@ export default function Card({ children, style, padded = true }) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 16,

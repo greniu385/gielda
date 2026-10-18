@@ -2,13 +2,14 @@ import { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketProvider } from '../context/MarketContext';
+import Logo from '../components/Logo';
 import { ToastProvider } from '../components/Toast';
+import { FONT_FILES, fonts } from '../theme/fonts';
 import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
 export default function RootLayout() {
@@ -30,6 +31,9 @@ export default function RootLayout() {
 function RootNavigator() {
   const { isDark, colors } = useAppTheme();
   const { user, status } = useAuth();
+  // Czcionki są w projekcie (assets z @expo-google-fonts) — ładowanie trwa ułamek sekundy.
+  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
+  const fontsReady = fontsLoaded || Boolean(fontError);
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -65,7 +69,7 @@ function RootNavigator() {
           <Stack.Screen name="offline" />
         </Stack.Protected>
       </Stack>
-      {status === 'loading' ? <SplashOverlay /> : null}
+      {status === 'loading' || !fontsReady ? <SplashOverlay /> : null}
     </ThemeProvider>
   );
 }
@@ -75,9 +79,7 @@ function SplashOverlay() {
   const { colors } = useAppTheme();
   return (
     <View style={[StyleSheet.absoluteFill, styles.splash, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={colors.gradient} style={styles.logo}>
-        <Ionicons name="trending-up" size={40} color="#FFFFFF" />
-      </LinearGradient>
+      <Logo size={72} />
       <Text style={[styles.title, { color: colors.text }]}>Giełda Walut</Text>
       <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
     </View>
@@ -86,6 +88,5 @@ function SplashOverlay() {
 
 const styles = StyleSheet.create({
   splash: { alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 84, height: 84, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', marginTop: 18 },
+  title: { fontSize: 26, fontFamily: fonts.bold, marginTop: 18 },
 });

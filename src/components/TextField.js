@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/fonts';
 
 export default function TextField({ label, icon, error, secureTextEntry, style, ...inputProps }) {
   const { colors } = useAppTheme();
@@ -48,16 +49,22 @@ export default function TextField({ label, icon, error, secureTextEntry, style, 
 
 const styles = StyleSheet.create({
   wrapper: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginLeft: 4 },
+  label: { fontSize: 13, fontFamily: fonts.semibold, marginBottom: 6, marginLeft: 4 },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: 10,
     paddingHorizontal: 14,
     minHeight: 52,
   },
-  input: { flex: 1, fontSize: 16, paddingVertical: 12, ...Platform.select({ web: { outlineStyle: 'none' } }) },
-  error: { fontSize: 12, marginTop: 5, marginLeft: 4 },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: fonts.regular,
+    paddingVertical: 12,
+    ...Platform.select({ web: { outlineStyle: 'none' } }),
+  },
+  error: { fontSize: 12, fontFamily: fonts.regular, marginTop: 5, marginLeft: 4 },
 });

@@ -8,6 +8,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../services/api';
 import { useAppTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/fonts';
 
 const STEPS = [
   'Otwórz terminal w folderze projektu.',
@@ -48,19 +49,19 @@ export default function OfflineScreen() {
 const styles = StyleSheet.create({
   box: { maxWidth: 720 },
   alert: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 16 },
-  alertText: { flex: 1, fontSize: 14.5, lineHeight: 21 },
-  mono: { fontFamily: 'monospace', fontWeight: '700' },
+  alertText: { flex: 1, fontSize: 14.5, fontFamily: fonts.regular, lineHeight: 21 },
+  mono: { fontFamily: fonts.monoBold },
   step: {
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
   number: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  numberText: { fontSize: 15, fontWeight: '800' },
-  stepText: { flex: 1, fontSize: 14.5, lineHeight: 20 },
+  numberText: { fontSize: 15, fontFamily: fonts.bold },
+  stepText: { flex: 1, fontSize: 14.5, fontFamily: fonts.regular, lineHeight: 20 },
   retry: { marginTop: 8, alignSelf: 'flex-start' },
 });

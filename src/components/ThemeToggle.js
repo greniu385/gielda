@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../theme/ThemeContext';
 import { NATIVE_DRIVER } from '../utils/animation';
+import { fonts } from '../theme/fonts';
 
 const MOON_COLOR = '#C9D4FF';
 const SUN_COLOR = '#F59E0B';
@@ -71,7 +72,7 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     padding: 4,
-    borderRadius: 999,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 2,
   },
@@ -81,9 +82,9 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: 7,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
-  segmentLabel: { fontSize: 13.5, fontWeight: '700' },
+  segmentLabel: { fontSize: 13.5, fontFamily: fonts.bold },
 });

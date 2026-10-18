@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import AppButton from '../../../components/AppButton';
@@ -20,6 +19,7 @@ import { getErrorMessage } from '../../../services/authService';
 import { SPEEDS, VOLATILITY_MODES } from '../../../simulation/marketEngine';
 import { useAppTheme } from '../../../theme/ThemeContext';
 import { formatDate, formatMoney } from '../../../utils/format';
+import { fonts } from '../../../theme/fonts';
 
 const SPEED_OPTIONS = Object.entries(SPEEDS).map(([value, { label }]) => ({ value, label }));
 const VOLATILITY_OPTIONS = Object.entries(VOLATILITY_MODES).map(([value, { label }]) => ({ value, label }));
@@ -65,9 +65,9 @@ export default function ProfileScreen() {
   const userSection = (
     <>
       <Card style={styles.userCard}>
-        <LinearGradient colors={colors.gradient} style={styles.avatar}>
-          <Text style={styles.initials}>{initials}</Text>
-        </LinearGradient>
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.initials, { color: colors.onPrimary }]}>{initials}</Text>
+        </View>
         <View style={styles.userInfo}>
           <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
             {name}
@@ -252,22 +252,22 @@ const styles = StyleSheet.create({
   column: { flex: 1, minWidth: 0 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  initials: { color: '#FFFFFF', fontSize: 23, fontWeight: '800' },
+  initials: { fontSize: 23, fontFamily: fonts.bold },
   userInfo: { flex: 1, minWidth: 0 },
-  name: { fontSize: 20, fontWeight: '800' },
-  email: { fontSize: 14, marginTop: 2 },
-  since: { fontSize: 12, marginTop: 4 },
+  name: { fontSize: 20, fontFamily: fonts.bold },
+  email: { fontSize: 14, fontFamily: fonts.regular, marginTop: 2 },
+  since: { fontSize: 12, fontFamily: fonts.regular, marginTop: 4 },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10, marginLeft: 4 },
   sectionTitleFirst: { marginTop: 0 },
-  sectionText: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.8 },
+  sectionText: { fontSize: 12.5, fontFamily: fonts.bold, letterSpacing: 0.8 },
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  settingIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  settingIcon: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   settingText: { flex: 1 },
-  settingTitle: { fontSize: 15, fontWeight: '700' },
-  settingSub: { fontSize: 12.5, marginTop: 2 },
-  label: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  settingTitle: { fontSize: 15, fontFamily: fonts.bold },
+  settingSub: { fontSize: 12.5, fontFamily: fonts.regular, marginTop: 2 },
+  label: { fontSize: 13, fontFamily: fonts.bold, marginBottom: 8 },
   labelSpaced: { marginTop: 18 },
-  hint: { fontSize: 12, marginTop: 8, lineHeight: 17 },
+  hint: { fontSize: 12, fontFamily: fonts.regular, marginTop: 8, lineHeight: 17 },
   accountCard: { gap: 10 },
-  footer: { fontSize: 12, textAlign: 'center', marginTop: 24 },
+  footer: { fontSize: 12, fontFamily: fonts.regular, textAlign: 'center', marginTop: 24 },
 });

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useResponsive } from '../../../hooks/useResponsive';
 import { useAppTheme } from '../../../theme/ThemeContext';
+import { fonts } from '../../../theme/fonts';
 
 const TABS = [
   { name: 'index', title: 'Rynek', icon: 'stats-chart' },
@@ -26,7 +27,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,
-        tabBarLabelStyle: { fontSize: 11.5, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 11.5, fontFamily: fonts.bold },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,

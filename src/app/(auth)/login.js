@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../services/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { validateEmail } from '../../utils/validation';
+import { fonts } from '../../theme/fonts';
 
 export default function LoginScreen() {
   const { colors } = useAppTheme();
@@ -41,7 +42,7 @@ export default function LoginScreen() {
 
   return (
     <AuthScaffold
-      title="Witaj ponownie 👋"
+      title="Witaj ponownie"
       pageTitle="Logowanie"
       subtitle="Zaloguj się, aby handlować walutami na symulowanym rynku."
       footer={
@@ -99,8 +100,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   lastField: { marginBottom: 20 },
-  formError: { borderRadius: 12, padding: 12, marginBottom: 14 },
-  formErrorText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  footerText: { fontSize: 15 },
-  link: { fontWeight: '700' },
+  formError: { borderRadius: 8, padding: 12, marginBottom: 14 },
+  formErrorText: { fontSize: 14, fontFamily: fonts.semibold, textAlign: 'center' },
+  footerText: { fontSize: 15, fontFamily: fonts.regular },
+  link: { fontFamily: fonts.bold },
 });

@@ -8,6 +8,7 @@ import AppButton from './AppButton';
 import Card from './Card';
 import TextField from './TextField';
 import { useToast } from './Toast';
+import { fonts } from '../theme/fonts';
 
 const EMPTY = { currentPassword: '', newPassword: '', confirm: '' };
 
@@ -91,5 +92,5 @@ export default function ChangePasswordCard() {
 }
 
 const styles = StyleSheet.create({
-  hint: { fontSize: 12.5, lineHeight: 18, marginBottom: 14 },
+  hint: { fontSize: 12.5, fontFamily: fonts.regular, lineHeight: 18, marginBottom: 14 },
 });

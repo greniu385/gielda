@@ -9,6 +9,7 @@ import { formatRate } from '../utils/format';
 import ChangeBadge from './ChangeBadge';
 import CurrencyAvatar from './CurrencyAvatar';
 import Sparkline from './Sparkline';
+import { fonts } from '../theme/fonts';
 
 // Ile kolumn tabeli walut zmieści się w danej szerokości (w pikselach):
 // 'full' — z wykresem, 'medium' — bez wykresu, null — zwykła lista jak na telefonie.
@@ -100,20 +101,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 18,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
-  rowWide: { gap: 16, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 16, marginBottom: 8 },
+  rowWide: { gap: 16, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 10, marginBottom: 8 },
   info: { flex: 1, minWidth: 0 },
   infoWide: { minWidth: 120 },
-  code: { fontSize: 16, fontWeight: '800' },
-  name: { fontSize: 12.5, marginTop: 2 },
+  code: { fontSize: 16, fontFamily: fonts.bold },
+  name: { fontSize: 12.5, fontFamily: fonts.regular, marginTop: 2 },
   price: { alignItems: 'flex-end', gap: 4, minWidth: 82 },
-  rate: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  cell: { width: 104, textAlign: 'right', fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  cellStrong: { fontWeight: '800' },
+  rate: { fontSize: 16, fontFamily: fonts.monoBold },
+  cell: { width: 104, textAlign: 'right', fontSize: 15, fontFamily: fonts.monoMedium },
+  cellStrong: { fontFamily: fonts.monoBold },
   changeCell: { width: 86, alignItems: 'flex-end', textAlign: 'right' },
   header: { flexDirection: 'row', alignItems: 'flex-end', gap: 16, paddingHorizontal: 19, marginBottom: 8 },
-  headerLabel: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.4 },
+  headerLabel: { fontSize: 10.5, fontFamily: fonts.bold, letterSpacing: 0.4 },
 });

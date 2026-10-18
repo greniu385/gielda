@@ -17,6 +17,7 @@ import { useResponsive } from '../../../hooks/useResponsive';
 import { getPortfolioValue } from '../../../logic/trading';
 import { SPEEDS, getChangePercent } from '../../../simulation/marketEngine';
 import { useAppTheme } from '../../../theme/ThemeContext';
+import { fonts } from '../../../theme/fonts';
 
 const SORT_OPTIONS = [
   { value: 'default', label: 'Wszystkie' },
@@ -147,7 +148,7 @@ export default function MarketScreen() {
 
   return (
     <Screen scroll>
-      <ScreenHeader title="Rynek" subtitle={firstName ? `Cześć, ${firstName} 👋` : 'Witaj 👋'} />
+      <ScreenHeader title="Rynek" subtitle={firstName ? `Cześć, ${firstName}` : 'Witaj'} />
       {isDesktop ? (
         <>
           <View style={styles.topRow}>
@@ -180,13 +181,13 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 12,
     paddingLeft: 8,
-    borderRadius: 18,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     marginTop: 14,
   },
   statusText: { flex: 1 },
-  statusTitle: { fontSize: 14.5, fontWeight: '700' },
-  statusSub: { fontSize: 12, marginTop: 2 },
+  statusTitle: { fontSize: 14.5, fontFamily: fonts.bold },
+  statusSub: { fontSize: 12, fontFamily: fonts.regular, marginTop: 2 },
   pauseButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   sectionHeader: {
     flexDirection: 'row',
@@ -200,19 +201,19 @@ const styles = StyleSheet.create({
   statusWide: { marginTop: 0 },
   newsHeaderWide: { marginTop: 18, marginBottom: 10 },
   ratesHeaderWide: { marginTop: 32 },
-  sectionTitle: { fontSize: 19, fontWeight: '800', letterSpacing: -0.3 },
-  sectionAction: { fontSize: 14, fontWeight: '700' },
-  sectionHint: { fontSize: 12.5 },
+  sectionTitle: { fontSize: 19, fontFamily: fonts.bold, letterSpacing: -0.3 },
+  sectionAction: { fontSize: 14, fontFamily: fonts.bold },
+  sectionHint: { fontSize: 12.5, fontFamily: fonts.regular },
   noNews: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     borderStyle: 'dashed',
   },
-  noNewsText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
+  noNewsText: { flex: 1, fontSize: 13.5, fontFamily: fonts.regular, lineHeight: 19 },
   sort: { marginBottom: 12 },
   sortWide: { alignSelf: 'flex-start', width: 380, marginBottom: 18 },
   emptyList: { textAlign: 'center', paddingVertical: 20 },

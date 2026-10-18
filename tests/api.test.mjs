@@ -104,6 +104,23 @@ test('serwer odrzuca transakcje bez pokrycia i z absurdalnym kursem', async () =
   assert.equal(data.portfolio.tradesCount, 2, 'odrzucone transakcje nie zmieniają portfela');
 });
 
+test('gra na spadek: otwarcie i zamknięcie krótkiej pozycji', async () => {
+  const open = await call('POST', '/api/trades', { token, body: { type: 'short', code: 'EUR', amount: 100, rate: 4.3 } });
+  assert.equal(open.status, 201);
+  assert.deepEqual(open.data.portfolio.shorts.EUR, { amount: 100, entryPrice: 4.3, margin: 430 });
+
+  const portfolio = await call('GET', '/api/portfolio', { token });
+  assert.equal(portfolio.data.portfolio.shorts.EUR.margin, 430, 'pozycja zapisana w bazie');
+
+  const cover = await call('POST', '/api/trades', { token, body: { type: 'cover', code: 'EUR', amount: 100, rate: 4.2 } });
+  assert.equal(cover.status, 201);
+  assert.equal(cover.data.transaction.pnl, 10);
+  assert.equal(cover.data.portfolio.shorts.EUR, undefined);
+
+  const bad = await call('POST', '/api/trades', { token, body: { type: 'loan', code: 'EUR', amount: 1, rate: 4.2 } });
+  assert.equal(bad.status, 400);
+});
+
 test('zmiana hasła', async () => {
   const wrong = await call('POST', '/api/auth/change-password', {
     token,

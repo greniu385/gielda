@@ -14,22 +14,24 @@ import ScreenHeader from '../../../components/ScreenHeader';
 import { useMarket } from '../../../context/MarketContext';
 import { usePortfolio } from '../../../context/PortfolioContext';
 import { useResponsive } from '../../../hooks/useResponsive';
-import { BASE_CURRENCY, getBalance, getHoldings, getPortfolioValue } from '../../../logic/trading';
+import { BASE_CURRENCY, getBalance, getHoldings, getPortfolioValue, getShortPositions } from '../../../logic/trading';
 import { getCurrency } from '../../../simulation/currencies';
 import { getBidPrice } from '../../../simulation/marketEngine';
 import { useAppTheme } from '../../../theme/ThemeContext';
 import { formatMoney, formatNumber, formatRate, formatSignedMoney } from '../../../utils/format';
+import { fonts } from '../../../theme/fonts';
 
+// Stonowane kolory segmentów (PLN zawsze szary).
 const ALLOCATION_COLORS = [
-  '#6C8CFF',
-  '#2BD67B',
-  '#FFB547',
-  '#FF5C7A',
-  '#22D3EE',
-  '#C084FC',
-  '#F472B6',
-  '#A3E635',
-  '#FB923C',
+  '#8F8B80',
+  '#E0A33B',
+  '#3E9C7E',
+  '#4F7FAF',
+  '#C0603F',
+  '#8C7AA8',
+  '#B5A642',
+  '#5E9EA0',
+  '#B07A5A',
 ];
 
 export default function WalletScreen() {
@@ -54,10 +56,15 @@ export default function WalletScreen() {
   const totalValue = getPortfolioValue(portfolio, quotes);
   const cash = getBalance(portfolio, BASE_CURRENCY);
   const holdings = getHoldings(portfolio, quotes);
-  const unrealized = holdings.reduce((sum, h) => sum + h.pnl, 0);
+  const shorts = getShortPositions(portfolio, quotes);
+  const unrealized = [...holdings, ...shorts].reduce((sum, p) => sum + p.pnl, 0);
   const realized = portfolio?.realizedPnl ?? 0;
 
-  const allocation = [{ code: BASE_CURRENCY, value: cash }, ...holdings].map((item, i) => ({
+  const allocation = [
+    { key: BASE_CURRENCY, label: BASE_CURRENCY, value: cash },
+    ...holdings.map((h) => ({ key: h.code, label: h.code, value: h.value })),
+    ...shorts.map((p) => ({ key: `${p.code}-short`, label: `${p.code} short`, value: p.value })),
+  ].map((item, i) => ({
     ...item,
     color: ALLOCATION_COLORS[i % ALLOCATION_COLORS.length],
     share: totalValue > 0 ? item.value / totalValue : 0,
@@ -86,15 +93,15 @@ export default function WalletScreen() {
         {allocation
           .filter((a) => a.share > 0.001)
           .map((a) => (
-            <View key={a.code} style={{ flex: a.share, backgroundColor: a.color }} />
+            <View key={a.key} style={{ flex: a.share, backgroundColor: a.color }} />
           ))}
       </View>
       <View style={styles.legend}>
         {allocation.map((a) => (
-          <View key={a.code} style={styles.legendItem}>
+          <View key={a.key} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: a.color }]} />
             <Text style={[styles.legendText, { color: colors.textMuted }]}>
-              {a.code} {formatNumber(a.share * 100, 1)}%
+              {a.label} {formatNumber(a.share * 100, 1)}%
             </Text>
           </View>
         ))}
@@ -127,15 +134,15 @@ export default function WalletScreen() {
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktywa</Text>
 
       <View onLayout={(e) => setListWidth(e.nativeEvent.layout.width)}>
-        {table ? <AssetsTableHeader /> : null}
+        {table ? <AssetsTableHeader labels={['ILOŚĆ', 'ŚR. ZAKUP', 'KURS DZIŚ', 'WARTOŚĆ']} /> : null}
 
         <AssetRow
           code={BASE_CURRENCY}
           title="PLN"
           subtitle="Złoty polski · gotówka"
+          cells={[formatNumber(cash), '—', '—', formatMoney(cash)]}
           value={cash}
           wide={table}
-          amount={cash}
         />
 
         {holdings.map((h) => (
@@ -146,21 +153,55 @@ export default function WalletScreen() {
             subtitle={
               table ? getCurrency(h.code)?.name : `${getCurrency(h.code)?.name} · śr. ${formatRate(h.avgPrice)}`
             }
-            holding={h}
-            bid={getBidPrice(quotes[h.code])}
+            cells={[
+              formatNumber(h.amount),
+              formatRate(h.avgPrice),
+              formatRate(getBidPrice(quotes[h.code])),
+              formatMoney(h.value),
+            ]}
             value={h.value}
-            amount={h.amount}
+            result={h}
             wide={table}
             onPress={() => router.push(`/currency/${h.code}`)}
           />
         ))}
       </View>
 
-      {holdings.length === 0 ? (
+      {shorts.length ? (
+        <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Pozycje krótkie (gra na spadek)</Text>
+          {table ? <AssetsTableHeader labels={['ILOŚĆ', 'OTWARCIE', 'ODKUP DZIŚ', 'DEPOZYT']} /> : null}
+          {shorts.map((p) => (
+            <AssetRow
+              key={p.code}
+              code={p.code}
+              title={table ? `${p.code} short` : `${formatNumber(p.amount)} ${p.code} short`}
+              subtitle={
+                table
+                  ? getCurrency(p.code)?.name
+                  : `otwarcie ${formatRate(p.entryPrice)} · depozyt ${formatMoney(p.margin)}`
+              }
+              cells={[
+                formatNumber(p.amount),
+                formatRate(p.entryPrice),
+                formatRate(p.closePrice),
+                formatMoney(p.margin),
+              ]}
+              value={p.value}
+              result={p}
+              wide={table}
+              accent={colors.short}
+              onPress={() => router.push(`/currency/${p.code}`)}
+            />
+          ))}
+        </>
+      ) : null}
+
+      {holdings.length === 0 && shorts.length === 0 ? (
         <EmptyState
           icon="wallet-outline"
           title="Nie masz jeszcze walut"
-          message="Kup pierwszą walutę na rynku i obserwuj, jak zmienia się jej wartość."
+          message="Kup walutę albo zagraj na spadek jej kursu i obserwuj, jak zmienia się wartość portfela."
         >
           <AppButton title="Przejdź do rynku" icon="stats-chart" onPress={() => router.navigate('/')} small />
         </EmptyState>
@@ -169,24 +210,26 @@ export default function WalletScreen() {
   );
 }
 
-function AssetsTableHeader() {
+function AssetsTableHeader({ labels }) {
   const { colors } = useAppTheme();
   const label = [styles.headerLabel, { color: colors.textSubtle }];
   return (
     <View style={styles.tableHeader}>
       <View style={{ width: 40 }} />
       <Text style={[label, styles.assetInfo]}>WALUTA</Text>
-      <Text style={[styles.cell, label]}>ILOŚĆ</Text>
-      <Text style={[styles.cell, label]}>ŚR. ZAKUP</Text>
-      <Text style={[styles.cell, label]}>KURS DZIŚ</Text>
-      <Text style={[styles.cell, label]}>WARTOŚĆ</Text>
+      {labels.map((text) => (
+        <Text key={text} style={[styles.cell, label]}>
+          {text}
+        </Text>
+      ))}
       <Text style={[styles.cellWide, label]}>WYNIK</Text>
       <View style={{ width: 18 }} />
     </View>
   );
 }
 
-function AssetRow({ code, title, subtitle, value, amount, holding, bid, wide, onPress }) {
+// Wiersz tabeli aktywów. `cells` — wartości kolumn na komputerze, `result` — { pnl, pnlPercent }.
+function AssetRow({ code, title, subtitle, cells, value, result, wide, accent, onPress }) {
   const { colors } = useAppTheme();
   const textCell = [styles.cell, { color: colors.text }];
 
@@ -197,6 +240,7 @@ function AssetRow({ code, title, subtitle, value, amount, holding, bid, wide, on
       style={({ pressed, hovered }) => [
         styles.assetRow,
         wide && styles.assetRowWide,
+        accent && { borderLeftWidth: 3, borderLeftColor: accent },
         {
           backgroundColor: onPress && (pressed || hovered) ? colors.surfaceAlt : colors.surface,
           borderColor: onPress && hovered ? colors.primary : colors.border,
@@ -212,18 +256,19 @@ function AssetRow({ code, title, subtitle, value, amount, holding, bid, wide, on
       </View>
       {wide ? (
         <>
-          <Text style={textCell}>{formatNumber(amount)}</Text>
-          <Text style={textCell}>{holding ? formatRate(holding.avgPrice) : '—'}</Text>
-          <Text style={textCell}>{bid ? formatRate(bid) : '—'}</Text>
-          <Text style={[textCell, styles.cellStrong]}>{formatMoney(value)}</Text>
+          {cells.map((cell, i) => (
+            <Text key={i} style={[textCell, i === cells.length - 1 && styles.cellStrong]}>
+              {cell}
+            </Text>
+          ))}
           <View style={styles.cellWide}>
-            {holding ? (
+            {result ? (
               <>
-                <Text style={[styles.pnl, { color: holding.pnl >= 0 ? colors.up : colors.down }]}>
-                  {formatSignedMoney(holding.pnl)}
+                <Text style={[styles.pnl, { color: result.pnl >= 0 ? colors.up : colors.down }]}>
+                  {formatSignedMoney(result.pnl)}
                 </Text>
                 <View>
-                  <ChangeBadge value={holding.pnlPercent} size="sm" />
+                  <ChangeBadge value={result.pnlPercent} size="sm" />
                 </View>
               </>
             ) : (
@@ -235,7 +280,7 @@ function AssetRow({ code, title, subtitle, value, amount, holding, bid, wide, on
       ) : (
         <View style={styles.assetRight}>
           <Text style={[styles.assetValue, { color: colors.text }]}>{formatMoney(value)}</Text>
-          {holding ? <ChangeBadge value={holding.pnlPercent} size="sm" /> : null}
+          {result ? <ChangeBadge value={result.pnlPercent} size="sm" /> : null}
         </View>
       )}
     </Pressable>
@@ -263,42 +308,42 @@ const styles = StyleSheet.create({
   statsRowWide: { marginTop: 0 },
   tile: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 10,
     padding: 12,
     borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'space-between',
     minHeight: 78,
   },
-  tileLabel: { fontSize: 12, fontWeight: '600' },
-  tileValue: { fontSize: 15, fontWeight: '800', marginTop: 6 },
+  tileLabel: { fontSize: 12, fontFamily: fonts.semibold },
+  tileValue: { fontSize: 15, fontFamily: fonts.monoBold, marginTop: 6 },
   section: { marginTop: 16 },
   allocationWide: { flex: 1, marginTop: 12 },
-  cardTitle: { fontSize: 17, fontWeight: '800', marginBottom: 14 },
+  cardTitle: { fontSize: 17, fontFamily: fonts.bold, marginBottom: 14 },
   bar: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 2 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12.5, fontWeight: '600' },
-  sectionTitle: { fontSize: 19, fontWeight: '800', marginTop: 28, marginBottom: 12 },
+  legendText: { fontSize: 12.5, fontFamily: fonts.semibold },
+  sectionTitle: { fontSize: 19, fontFamily: fonts.bold, marginTop: 28, marginBottom: 12 },
   tableHeader: { flexDirection: 'row', alignItems: 'flex-end', gap: 16, paddingHorizontal: 19, marginBottom: 8 },
-  headerLabel: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.4 },
+  headerLabel: { fontSize: 10.5, fontFamily: fonts.bold, letterSpacing: 0.4 },
   assetRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 18,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
-  assetRowWide: { gap: 16, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 16, marginBottom: 8 },
+  assetRowWide: { gap: 16, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 10, marginBottom: 8 },
   assetInfo: { flex: 1, minWidth: 0 },
-  assetCode: { fontSize: 15.5, fontWeight: '800' },
-  assetSub: { fontSize: 12.5, marginTop: 2 },
+  assetCode: { fontSize: 15.5, fontFamily: fonts.bold },
+  assetSub: { fontSize: 12.5, fontFamily: fonts.regular, marginTop: 2 },
   assetRight: { alignItems: 'flex-end', gap: 4 },
-  assetValue: { fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  cell: { width: 108, textAlign: 'right', fontSize: 14.5, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  cellStrong: { fontWeight: '800' },
+  assetValue: { fontSize: 15, fontFamily: fonts.monoBold },
+  cell: { width: 108, textAlign: 'right', fontSize: 14.5, fontFamily: fonts.monoMedium },
+  cellStrong: { fontFamily: fonts.monoBold },
   cellWide: { width: 120, alignItems: 'flex-end', textAlign: 'right', gap: 4 },
-  pnl: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  pnl: { fontSize: 14, fontFamily: fonts.monoBold },
 });

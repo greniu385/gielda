@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +11,8 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { formatMoney, formatPercent } from '../utils/format';
 import ConfirmDialog from './ConfirmDialog';
 import LiveDot from './LiveDot';
+import Logo from './Logo';
+import { fonts } from '../theme/fonts';
 
 export const NAV_ITEMS = [
   { href: '/', title: 'Rynek', icon: 'stats-chart' },
@@ -43,9 +44,7 @@ export default function Sidebar() {
   return (
     <View style={[styles.sidebar, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
       <View style={styles.brand}>
-        <LinearGradient colors={colors.gradient} style={styles.logo}>
-          <Ionicons name="trending-up" size={22} color="#FFFFFF" />
-        </LinearGradient>
+        <Logo size={40} />
         <View>
           <Text style={[styles.brandName, { color: colors.text }]}>Giełda Walut</Text>
           <Text style={[styles.brandSub, { color: colors.textMuted }]}>Symulator rynku</Text>
@@ -63,7 +62,10 @@ export default function Sidebar() {
               accessibilityState={{ selected: active }}
               style={({ hovered }) => [
                 styles.navItem,
-                { backgroundColor: active ? colors.primarySoft : hovered ? colors.surfaceAlt : 'transparent' },
+                {
+                  backgroundColor: active || hovered ? colors.surfaceAlt : 'transparent',
+                  borderLeftColor: active ? colors.primary : 'transparent',
+                },
               ]}
             >
               <Ionicons
@@ -71,7 +73,7 @@ export default function Sidebar() {
                 size={20}
                 color={active ? colors.primary : colors.textMuted}
               />
-              <Text style={[styles.navLabel, { color: active ? colors.primary : colors.text }]}>{item.title}</Text>
+              <Text style={[styles.navLabel, { color: active ? colors.text : colors.textMuted }]}>{item.title}</Text>
             </Pressable>
           );
         })}
@@ -79,13 +81,13 @@ export default function Sidebar() {
 
       <View style={styles.spacer} />
 
-      <LinearGradient colors={colors.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.valueCard}>
-        <Text style={styles.valueLabel}>Wartość portfela</Text>
-        <Text style={styles.value} numberOfLines={1}>
+      <View style={[styles.valueCard, { backgroundColor: colors.heroBg }]}>
+        <Text style={[styles.valueLabel, { color: colors.heroMuted }]}>WARTOŚĆ PORTFELA</Text>
+        <Text style={[styles.value, { color: colors.heroText }]} numberOfLines={1}>
           {formatMoney(value)}
         </Text>
-        <Text style={styles.valueChange}>{formatPercent(change)} od startu</Text>
-      </LinearGradient>
+        <Text style={[styles.valueChange, { color: colors.heroText }]}>{formatPercent(change)} od startu</Text>
+      </View>
 
       <View style={[styles.status, { borderColor: colors.border }]}>
         <LiveDot color={settings.paused ? colors.warning : colors.up} active={!settings.paused} size={7} />
@@ -95,9 +97,9 @@ export default function Sidebar() {
       </View>
 
       <View style={[styles.user, { borderTopColor: colors.border }]}>
-        <LinearGradient colors={colors.gradient} style={styles.avatar}>
-          <Text style={styles.avatarText}>{name.slice(0, 1).toUpperCase()}</Text>
-        </LinearGradient>
+        <View style={[styles.avatar, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+          <Text style={[styles.avatarText, { color: colors.primary }]}>{name.slice(0, 1).toUpperCase()}</Text>
+        </View>
         <View style={styles.userInfo}>
           <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
             {name}
@@ -135,24 +137,24 @@ export default function Sidebar() {
 const styles = StyleSheet.create({
   sidebar: { width: 264, borderRightWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 24 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, marginBottom: 32 },
-  logo: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  brandName: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
-  brandSub: { fontSize: 12.5, marginTop: 1 },
+  brandName: { fontSize: 18, fontFamily: fonts.bold, letterSpacing: -0.3 },
+  brandSub: { fontSize: 12.5, fontFamily: fonts.regular, marginTop: 1 },
   nav: { gap: 4 },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 8,
+    borderLeftWidth: 3,
   },
-  navLabel: { fontSize: 15, fontWeight: '700' },
+  navLabel: { fontSize: 15, fontFamily: fonts.bold },
   spacer: { flex: 1 },
-  valueCard: { borderRadius: 18, padding: 16 },
-  valueLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 12.5, fontWeight: '600' },
-  value: { color: '#FFFFFF', fontSize: 21, fontWeight: '800', marginTop: 4 },
-  valueChange: { color: 'rgba(255,255,255,0.85)', fontSize: 12.5, fontWeight: '700', marginTop: 4 },
+  valueCard: { borderRadius: 8, padding: 16 },
+  valueLabel: { fontSize: 11, fontFamily: fonts.bold, letterSpacing: 1.1 },
+  value: { fontSize: 20, fontFamily: fonts.monoBold, marginTop: 6 },
+  valueChange: { fontSize: 12.5, fontFamily: fonts.monoMedium, marginTop: 4 },
   status: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -160,10 +162,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 8,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  statusText: { fontSize: 12.5, fontWeight: '600' },
+  statusText: { fontSize: 12.5, fontFamily: fonts.semibold },
   user: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -173,10 +175,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  avatarText: { fontSize: 16, fontFamily: fonts.bold },
   userInfo: { flex: 1, minWidth: 0 },
-  userName: { fontSize: 14, fontWeight: '700' },
-  userEmail: { fontSize: 12, marginTop: 1 },
-  logout: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  userName: { fontSize: 14, fontFamily: fonts.bold },
+  userEmail: { fontSize: 12, fontFamily: fonts.regular, marginTop: 1 },
+  logout: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 });
