@@ -6,7 +6,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-import { isFirebaseConfigured } from '../config/firebase';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketProvider } from '../context/MarketContext';
 import { ToastProvider } from '../components/Toast';
@@ -30,7 +29,7 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { isDark, colors } = useAppTheme();
-  const { user, initializing } = useAuth();
+  const { user, status } = useAuth();
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -48,7 +47,7 @@ function RootNavigator() {
     };
   }, [isDark, colors]);
 
-  const loggedIn = isFirebaseConfigured && Boolean(user);
+  const offline = status === 'offline';
 
   return (
     <ThemeProvider value={navigationTheme}>
@@ -56,22 +55,22 @@ function RootNavigator() {
       {/* Stack.Protected pilnuje dostępu: zalogowany użytkownik widzi aplikację,
           a niezalogowany — tylko ekrany logowania i rejestracji. */}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-        <Stack.Protected guard={loggedIn} redirectTo={isFirebaseConfigured ? '/login' : '/setup'}>
+        <Stack.Protected guard={!offline && Boolean(user)} redirectTo={offline ? '/offline' : '/login'}>
           <Stack.Screen name="(app)" />
         </Stack.Protected>
-        <Stack.Protected guard={isFirebaseConfigured && !user} redirectTo={isFirebaseConfigured ? '/' : '/setup'}>
+        <Stack.Protected guard={!offline && !user} redirectTo={offline ? '/offline' : '/'}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
-        <Stack.Protected guard={!isFirebaseConfigured} redirectTo="/">
-          <Stack.Screen name="setup" />
+        <Stack.Protected guard={offline} redirectTo="/">
+          <Stack.Screen name="offline" />
         </Stack.Protected>
       </Stack>
-      {initializing ? <SplashOverlay /> : null}
+      {status === 'loading' ? <SplashOverlay /> : null}
     </ThemeProvider>
   );
 }
 
-// Ekran ładowania wyświetlany, dopóki Firebase nie sprawdzi, czy użytkownik jest zalogowany.
+// Ekran ładowania wyświetlany, dopóki nie sprawdzimy połączenia z serwerem i sesji użytkownika.
 function SplashOverlay() {
   const { colors } = useAppTheme();
   return (

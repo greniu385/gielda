@@ -14,7 +14,7 @@
     "expo-linking": "~58.0.13",
     "expo-router": "~58.0.23",
     "expo-status-bar": "~58.0.3",
-    "firebase": "^13.0.0",
+    "express": "~5.2.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
@@ -24,16 +24,20 @@
     "react-native-web": "~0.21.4"
   },
   "scripts": {
-    "start": "expo start --web",
+    "start": "concurrently -k -n serwer,strona -c blue,magenta \"npm:server\" \"npm:web\"",
+    "server": "node --disable-warning=ExperimentalWarning --import ./scripts/register-loader.mjs server/index.mjs",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
+    "preview": "npm run build:web && npm run server",
+    "db:seed": "node --disable-warning=ExperimentalWarning --import ./scripts/register-loader.mjs server/seed.mjs",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "test": "node --import ./tests/setup.mjs --test tests/*.test.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --import ./scripts/register-loader.mjs --test tests/*.test.mjs",
     "lint": "expo lint"
   },
   "private": true,
   "devDependencies": {
+    "concurrently": "~10.0.5",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4"
   }

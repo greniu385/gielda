@@ -10,6 +10,7 @@ import PortfolioSummaryCard from '../../../components/PortfolioSummaryCard';
 import Screen from '../../../components/Screen';
 import ScreenHeader from '../../../components/ScreenHeader';
 import SegmentedControl from '../../../components/SegmentedControl';
+import { useAuth } from '../../../context/AuthContext';
 import { useMarket } from '../../../context/MarketContext';
 import { usePortfolio } from '../../../context/PortfolioContext';
 import { useResponsive } from '../../../hooks/useResponsive';
@@ -29,13 +30,14 @@ export default function MarketScreen() {
   const { isWide, isDesktop } = useResponsive();
   const { market, quotes, news, settings, updateSettings } = useMarket();
   const { portfolio } = usePortfolio();
+  const { user } = useAuth();
   const [sort, setSort] = useState('default');
   const [showAllNews, setShowAllNews] = useState(false);
   const [listWidth, setListWidth] = useState(0);
   const columns = isWide ? getTableColumns(listWidth) : null;
 
   const totalValue = getPortfolioValue(portfolio, quotes);
-  const firstName = portfolio?.displayName?.split(' ')[0];
+  const firstName = user?.displayName?.split(' ')[0];
 
   const list = useMemo(() => {
     const all = Object.values(quotes);

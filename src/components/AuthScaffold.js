@@ -19,7 +19,7 @@ import ThemeToggle from './ThemeToggle';
 const FEATURES = [
   { icon: 'cash-outline', text: `${formatMoney(STARTING_BALANCE)} wirtualnych środków na start` },
   { icon: 'pulse', text: 'Kursy zmieniają się na żywo — symulacja rynku z wiadomościami' },
-  { icon: 'cloud-done-outline', text: 'Portfel i historia zapisane w chmurze Firebase' },
+  { icon: 'server-outline', text: 'Konta, portfel i historia w lokalnej bazie danych SQLite' },
 ];
 
 const HERO_CODES = ['USD', 'EUR', 'GBP', 'CHF'];

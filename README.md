@@ -2,9 +2,9 @@
 
 Aplikacja internetowa **do przeglądarki na komputerze**, napisana w **React Native (Expo + react-native-web)**,
 do handlu walutami na **symulowanym rynku**.
-Użytkownik zakłada konto (**Firebase Authentication**), dostaje 10 000 zł wirtualnych
-środków i kupuje / sprzedaje waluty, których kursy zmieniają się na żywo.
-Portfel i historia transakcji zapisują się w chmurze (**Cloud Firestore**).
+Użytkownik zakłada konto, dostaje 10 000 zł wirtualnych środków i kupuje / sprzedaje waluty,
+których kursy zmieniają się na żywo. Konta, portfele i historia transakcji są zapisywane
+w **lokalnej bazie danych SQLite**, którą obsługuje własny serwer w **Node.js (Express)**.
 Aplikacja ma **tryb nocny i jasny** przełączany jednym przyciskiem.
 
 ---
@@ -13,16 +13,17 @@ Aplikacja ma **tryb nocny i jasny** przełączany jednym przyciskiem.
 
 **Konto użytkownika**
 - rejestracja (imię/nick, e-mail, hasło z miernikiem siły, powtórzenie hasła),
-- logowanie, wylogowanie, reset hasła e-mailem,
-- walidacja formularzy i komunikaty błędów Firebase po polsku,
-- sesja zapamiętywana po zamknięciu aplikacji.
+- logowanie, wylogowanie, zmiana hasła w Profilu,
+- hasła zapisane w bazie wyłącznie jako hash (scrypt + losowa sól),
+- walidacja formularzy w aplikacji i na serwerze, komunikaty błędów po polsku,
+- sesja zapamiętywana po zamknięciu przeglądarki (token, ważny 30 dni).
 
 **Giełda**
 - 8 walut: USD, EUR, GBP, CHF, JPY, CAD, NOK, CZK (kursy w PLN),
 - kupno po kursie *ask* i sprzedaż po kursie *bid* (spread jak w kantorze),
 - kwota w walucie albo w złotówkach, szybkie przyciski 25% / 50% / 75% / MAX,
-- blokada zakupu ponad saldo i sprzedaży ponad stan,
-- transakcje Firestore — saldo i historia zapisują się razem albo wcale.
+- serwer sprawdza saldo i blokuje zakup ponad stan konta oraz sprzedaż ponad posiadaną ilość,
+- transakcje SQL — saldo i historia zapisują się razem albo wcale.
 
 **Symulacja rynku**
 - kursy zmieniają się co tick (domyślnie co 1,5 s),
@@ -33,7 +34,7 @@ Aplikacja ma **tryb nocny i jasny** przełączany jednym przyciskiem.
 **Portfel i historia**
 - łączna wartość portfela, zysk/strata względem startu,
 - zysk zrealizowany i bieżący, średni kurs zakupu każdej waluty,
-- wykres struktury portfela, lista aktywów,
+- wykres struktury portfela, tabela aktywów,
 - historia transakcji z filtrem kupno / sprzedaż.
 
 **Wygląd**
@@ -42,91 +43,101 @@ Aplikacja ma **tryb nocny i jasny** przełączany jednym przyciskiem.
 - ciemny i jasny motyw — przełącznik „Ciemny | Jasny” w nagłówku każdej strony (oraz w Profilu),
 - wybór motywu jest zapamiętywany,
 - wykresy kursów (SVG), gradienty, animacje, powiadomienia,
-- w węższym oknie (lub na telefonie) układ automatycznie przechodzi w jedną kolumnę z dolnym menu.
+- w węższym oknie układ automatycznie przechodzi w jedną kolumnę z dolnym menu.
 
 ---
 
 ## 🚀 Uruchomienie
 
-Wymagania: [Node.js](https://nodejs.org) 22.13+ (lub 24) i dowolna przeglądarka (Chrome, Edge, Firefox).
+Wymagania: [Node.js](https://nodejs.org) **22.13+** (lub 24) i dowolna przeglądarka (Chrome, Edge, Firefox).
+Bazy danych nie trzeba instalować — SQLite jest wbudowane w Node.js.
 
 ```bash
 npm install
-cp .env.example .env      # potem uzupełnij .env — patrz niżej
-npm start                 # uruchamia stronę w przeglądarce
+npm start
 ```
 
-Aplikacja otworzy się pod adresem **http://localhost:8081**. Zmiany w kodzie
-widać od razu po zapisaniu pliku.
+`npm start` uruchamia jednocześnie:
+- **serwer z bazą danych** — http://localhost:4000 (API),
+- **stronę** — **http://localhost:8081** ← to otwórz w przeglądarce.
 
-> Bez uzupełnionego pliku `.env` aplikacja pokaże ekran „Konfiguracja” z instrukcją.
-
-<details>
-<summary>Dodatkowo: uruchomienie na telefonie</summary>
-
-Ten sam kod działa też jako aplikacja mobilna: `npx expo start`, a potem zeskanuj kod QR
-w aplikacji **Expo Go** ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) /
-[iOS](https://apps.apple.com/app/expo-go/id982107779)).
-</details>
-
----
-
-## 🔥 Podłączenie Firebase (ok. 5 minut)
-
-1. Wejdź na <https://console.firebase.google.com> → **Dodaj projekt** (Google Analytics można wyłączyć).
-2. **Authentication** → *Rozpocznij* → zakładka **Sign-in method** → włącz **E-mail/hasło**.
-3. **Firestore Database** → *Utwórz bazę danych* → wybierz lokalizację (np. `eur3`) → tryb produkcyjny.
-4. W Firestore przejdź do zakładki **Reguły**, wklej zawartość pliku [`firestore.rules`](firestore.rules) i kliknij **Opublikuj**.
-5. **Ustawienia projektu** (⚙️) → sekcja *Twoje aplikacje* → ikona **`</>`** (Web) → zarejestruj aplikację.
-   Firebase pokaże obiekt `firebaseConfig`.
-6. Przepisz wartości z `firebaseConfig` do pliku `.env`:
-
-   | `firebaseConfig`    | `.env`                                     |
-   |---------------------|--------------------------------------------|
-   | `apiKey`            | `EXPO_PUBLIC_FIREBASE_API_KEY`             |
-   | `authDomain`        | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`         |
-   | `projectId`         | `EXPO_PUBLIC_FIREBASE_PROJECT_ID`          |
-   | `storageBucket`     | `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`      |
-   | `messagingSenderId` | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` |
-   | `appId`             | `EXPO_PUBLIC_FIREBASE_APP_ID`              |
-
-7. Uruchom aplikację ponownie z czyszczeniem pamięci podręcznej: `npx expo start --web -c`.
-
-Po rejestracji pierwszego użytkownika zobaczysz go w **Authentication → Users**,
-a jego portfel w **Firestore → users**.
-
-> Plik `.env` jest w `.gitignore`, więc dane projektu nie trafią do repozytorium.
-> Reguły można też wgrać z terminala: `npx firebase-tools deploy --only firestore:rules --project <id-projektu>`.
-
-### Struktura bazy danych
-
-```
-users/{uid}
-  displayName, email, createdAt
-  balances:   { PLN: 7072.92, USD: 250, EUR: 480.08 }
-  avgPrices:  { USD: 3.69, EUR: 4.166 }        ← średni kurs zakupu
-  realizedPnl, tradesCount, startingBalance
-
-users/{uid}/transactions/{id}
-  type: "buy" | "sell", code, amount, rate, total, pnl, createdAt
-```
-
-Reguły bezpieczeństwa pozwalają każdemu użytkownikowi czytać i zapisywać wyłącznie własne dane.
-
----
-
-## 🌍 Publikacja strony w internecie (opcjonalnie)
-
-Gotową stronę można opublikować za darmo w **Firebase Hosting** (ten sam projekt Firebase):
+Przy pierwszym uruchomieniu serwer sam utworzy plik bazy `server/data/gielda.db` ze wszystkimi tabelami.
+Konto można od razu założyć na ekranie rejestracji albo dodać konto demonstracyjne:
 
 ```bash
-npm run build:web                                   # tworzy folder dist/ ze stroną
-npx firebase-tools login                            # logowanie kontem Google
-npx firebase-tools deploy --only hosting --project <id-projektu>
+npm run db:seed          # e-mail: demo@gielda.pl, hasło: demo123
 ```
 
-Strona będzie dostępna pod adresem `https://<id-projektu>.web.app` — wystarczy wysłać link
-nauczycielowi. Konfiguracja hostingu jest już w pliku [`firebase.json`](firebase.json).
+> Jeśli serwer nie działa, aplikacja pokaże ekran „Brak połączenia” z instrukcją i przyciskiem „Spróbuj ponownie”.
+
+### Wersja do prezentacji (jeden adres)
+
+```bash
+npm run preview
+```
+
+Buduje gotową stronę i uruchamia serwer, który udostępnia ją razem z API pod jednym adresem:
+**http://localhost:4000**. Inne komputery w tej samej sieci (np. w szkolnej pracowni) mogą wejść
+na `http://<adres-IP-komputera>:4000`.
+
+| Polecenie           | Co robi |
+|---------------------|---------|
+| `npm start`         | serwer + strona w trybie deweloperskim (zmiany w kodzie widać od razu) |
+| `npm run server`    | tylko serwer z bazą danych (port 4000) |
+| `npm run web`       | tylko strona (port 8081) |
+| `npm run preview`   | gotowa strona + serwer pod http://localhost:4000 |
+| `npm run db:seed`   | dodaje konto demo |
+| `npm test`          | testy (silnik rynku, logika portfela, API serwera) |
+| `npm run lint`      | sprawdzenie kodu (ESLint) |
+
+---
+
+## 🗄️ Baza danych (SQLite)
+
+Cała baza to jeden plik: **`server/data/gielda.db`** (nie trafia do repozytorium — jest w `.gitignore`).
+Schemat tabel jest w [`server/db.mjs`](server/db.mjs) i tworzy się automatycznie.
+
+```
+users                         sessions
+├─ id (PK)                    ├─ token (PK)
+├─ email (UNIQUE)             ├─ user_id → users.id
+├─ display_name               └─ created_at
+├─ password_hash   (scrypt)
+└─ created_at                 portfolios                 (1 wiersz na użytkownika)
+                              ├─ user_id (PK) → users.id
+balances                      ├─ starting_balance
+├─ user_id → users.id         ├─ realized_pnl
+├─ currency    (PLN, USD…)    └─ trades_count
+├─ amount
+└─ avg_price   (średni kurs   transactions
+               zakupu)        ├─ id (PK)
+                              ├─ user_id → users.id
+PK (user_id, currency)        ├─ type  ('buy' | 'sell')
+                              ├─ currency, amount, rate, total, pnl
+                              └─ created_at
+```
+
+- Relacje mają klucze obce z `ON DELETE CASCADE` — usunięcie użytkownika usuwa jego dane.
+- Kupno/sprzedaż wykonuje się w transakcji SQL (`BEGIN … COMMIT`) — przy błędzie nic się nie zapisuje.
+- Zawartość bazy można podejrzeć programem [DB Browser for SQLite](https://sqlitebrowser.org)
+  (otwórz plik `server/data/gielda.db`).
+- Żeby zacząć od zera, zatrzymaj serwer i usuń folder `server/data/`.
+
+### API serwera
+
+| Metoda | Adres                       | Opis |
+|--------|-----------------------------|------|
+| POST   | `/api/auth/register`        | rejestracja → token + dane użytkownika |
+| POST   | `/api/auth/login`           | logowanie → token + dane użytkownika |
+| POST   | `/api/auth/logout`          | wylogowanie (usuwa sesję) |
+| GET    | `/api/auth/me`              | dane zalogowanego użytkownika |
+| POST   | `/api/auth/change-password` | zmiana hasła |
+| GET    | `/api/portfolio`            | portfel (salda, średnie kursy, wyniki) |
+| POST   | `/api/portfolio/reset`      | przywrócenie 10 000 zł i usunięcie historii |
+| GET    | `/api/transactions`         | historia transakcji (najnowsze najpierw) |
+| POST   | `/api/trades`               | kupno / sprzedaż `{ type, code, amount, rate }` |
+
+Zapytania wymagające logowania wysyłają nagłówek `Authorization: Bearer <token>`.
 
 ---
 
@@ -148,58 +159,54 @@ nowy_kurs = kurs × exp(trend + powrót_do_średniej + szum + wiadomości)
 Kurs kupna = kurs średni × (1 + spread/2), kurs sprzedaży = kurs średni × (1 − spread/2).
 Silnik to czyste funkcje bez efektów ubocznych, dlatego jest pokryty testami.
 
+Obliczenia portfela ([`src/logic/trading.js`](src/logic/trading.js)) są wspólne dla aplikacji i serwera —
+aplikacja używa ich do podglądu transakcji, a serwer do jej wykonania i zapisu w bazie.
+
 ---
 
 ## 🗂️ Struktura projektu
 
 ```
-src/
+server/                       ← serwer Node.js + baza SQLite
+├── index.mjs                 ← uruchomienie serwera (port 4000)
+├── app.mjs                   ← adresy API (Express)
+├── db.mjs                    ← połączenie z bazą i schemat tabel
+├── auth.mjs                  ← rejestracja, logowanie, hashowanie haseł, sesje
+├── portfolio.mjs             ← portfel, transakcje, reset
+├── seed.mjs                  ← konto demo
+└── data/gielda.db            ← plik bazy (tworzy się sam)
+src/                          ← aplikacja (React Native / Expo)
 ├── app/                      ← ekrany (Expo Router, routing plikowy)
 │   ├── _layout.js            ← providery + ochrona tras (Stack.Protected)
-│   ├── setup.js              ← instrukcja, gdy brak konfiguracji Firebase
-│   ├── (auth)/               ← login, register, forgot-password
+│   ├── offline.js            ← ekran „Brak połączenia z serwerem”
+│   ├── (auth)/               ← logowanie, rejestracja
 │   └── (app)/                ← tylko dla zalogowanych (+ boczne menu)
 │       ├── (tabs)/           ← Rynek, Portfel, Historia, Profil
 │       └── currency/[code].js← wykres + kupno/sprzedaż waluty
 ├── components/               ← boczne menu, przyciski, pola, wykresy, tabele, dialogi…
-├── config/firebase.js        ← inicjalizacja Firebase (dane z .env)
 ├── context/                  ← stan globalny: Auth, Market, Portfolio
 ├── hooks/useResponsive.js    ← układ zależny od szerokości okna
-├── logic/trading.js          ← obliczenia portfela i transakcji
-├── services/                 ← Firebase Auth, Firestore, API NBP
+├── logic/trading.js          ← obliczenia portfela i transakcji (wspólne z serwerem)
+├── services/                 ← komunikacja z serwerem (api.js), API NBP
 ├── simulation/               ← silnik rynku, waluty, wiadomości
 ├── theme/                    ← kolory trybu ciemnego/jasnego + ThemeContext
-└── utils/                    ← formatowanie liczb, walidacja
-tests/                        ← testy jednostkowe (node:test)
-firestore.rules               ← reguły bezpieczeństwa bazy
+└── utils/                    ← formatowanie liczb, walidacja (wspólna z serwerem)
+scripts/                      ← loader pozwalający serwerowi używać modułów z src/
+tests/                        ← testy (node:test)
 ```
 
 ## 🛠️ Technologie
 
-Expo SDK 58 · React Native 0.88 + react-native-web · Expo Router · Firebase 13 (Auth + Firestore) ·
-react-native-svg · expo-linear-gradient · AsyncStorage · API NBP
+Expo SDK 58 · React Native 0.88 + react-native-web · Expo Router · Node.js · Express 5 ·
+SQLite (`node:sqlite`) · react-native-svg · expo-linear-gradient · AsyncStorage · API NBP
 
-## ✅ Testy i jakość kodu
+<details>
+<summary>Dodatkowo: uruchomienie na telefonie</summary>
 
-```bash
-npm test        # testy silnika rynku i logiki portfela
-npm run lint    # ESLint
-```
-
-### Testowanie bez prawdziwego projektu Firebase (opcjonalnie)
-
-Można użyć lokalnych emulatorów Firebase (wymagana Java 11+):
-
-```bash
-npx firebase-tools emulators:start --only auth,firestore --project demo-gielda
-```
-
-i w pliku `.env` ustawić dowolne wartości `EXPO_PUBLIC_FIREBASE_*` (np. `PROJECT_ID=demo-gielda`) oraz:
-
-```
-EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true
-EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=localhost
-```
+Ten sam kod działa też jako aplikacja mobilna. Uruchom serwer (`npm run server`), utwórz plik `.env`
+z adresem IP komputera (`EXPO_PUBLIC_API_URL=http://192.168.1.10:4000`), a potem `npx expo start`
+i zeskanuj kod QR w aplikacji **Expo Go** (telefon i komputer muszą być w tej samej sieci Wi-Fi).
+</details>
 
 ---
 

@@ -5,12 +5,14 @@ import { Link } from 'expo-router';
 import AppButton from '../../components/AppButton';
 import AuthScaffold from '../../components/AuthScaffold';
 import TextField from '../../components/TextField';
-import { getErrorMessage, loginUser } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { getErrorMessage } from '../../services/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { validateEmail } from '../../utils/validation';
 
 export default function LoginScreen() {
   const { colors } = useAppTheme();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -28,7 +30,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await loginUser({ email, password });
+      await login({ email, password });
       // Po zalogowaniu nawigacja przełączy się automatycznie (Stack.Protected w _layout.js).
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -81,13 +83,8 @@ export default function LoginScreen() {
         textContentType="password"
         onSubmitEditing={handleLogin}
         returnKeyType="go"
+        style={styles.lastField}
       />
-
-      <View style={styles.forgotRow}>
-        <Link href="/forgot-password" style={[styles.forgot, { color: colors.primary }]}>
-          Nie pamiętasz hasła?
-        </Link>
-      </View>
 
       {formError ? (
         <View style={[styles.formError, { backgroundColor: colors.downSoft }]}>
@@ -101,8 +98,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  forgotRow: { alignItems: 'flex-end', marginTop: -4, marginBottom: 18 },
-  forgot: { fontSize: 14, fontWeight: '600' },
+  lastField: { marginBottom: 20 },
   formError: { borderRadius: 12, padding: 12, marginBottom: 14 },
   formErrorText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
   footerText: { fontSize: 15 },

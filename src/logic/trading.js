@@ -1,4 +1,4 @@
-// Logika portfela i transakcji — czyste funkcje, niezależne od Firebase,
+// Logika portfela i transakcji — czyste funkcje, niezależne od bazy danych,
 // dzięki czemu można je łatwo testować (patrz tests/trading.test.mjs).
 
 import { getBidPrice } from '../simulation/marketEngine';

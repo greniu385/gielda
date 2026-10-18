@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { useMarket } from '../context/MarketContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { STARTING_BALANCE, getPortfolioValue } from '../logic/trading';
-import { logoutUser } from '../services/authService';
 import { useAppTheme } from '../theme/ThemeContext';
 import { formatMoney, formatPercent } from '../utils/format';
 import ConfirmDialog from './ConfirmDialog';
@@ -31,7 +30,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { colors } = useAppTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { portfolio } = usePortfolio();
   const { quotes, settings } = useMarket();
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -39,7 +38,7 @@ export default function Sidebar() {
   const value = getPortfolioValue(portfolio, quotes);
   const start = portfolio?.startingBalance ?? STARTING_BALANCE;
   const change = ((value - start) / start) * 100;
-  const name = portfolio?.displayName || user?.email?.split('@')[0] || 'Inwestor';
+  const name = user?.displayName || 'Inwestor';
 
   return (
     <View style={[styles.sidebar, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
@@ -120,12 +119,12 @@ export default function Sidebar() {
       <ConfirmDialog
         visible={confirmLogout}
         title="Wylogować się?"
-        message="Twój portfel zostanie zapisany w chmurze — po ponownym zalogowaniu wszystko będzie na swoim miejscu."
+        message="Twój portfel jest zapisany w bazie danych — po ponownym zalogowaniu wszystko będzie na swoim miejscu."
         icon="log-out-outline"
         confirmLabel="Wyloguj"
         onConfirm={() => {
           setConfirmLogout(false);
-          logoutUser();
+          logout();
         }}
         onCancel={() => setConfirmLogout(false)}
       />
@@ -140,7 +139,14 @@ const styles = StyleSheet.create({
   brandName: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
   brandSub: { fontSize: 12.5, marginTop: 1 },
   nav: { gap: 4 },
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
+  navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
   navLabel: { fontSize: 15, fontWeight: '700' },
   spacer: { flex: 1 },
   valueCard: { borderRadius: 18, padding: 16 },

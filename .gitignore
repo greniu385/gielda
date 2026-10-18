@@ -31,9 +31,12 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files (dane projektu Firebase)
+# local env files
 .env
 .env*.local
+
+# lokalna baza danych SQLite
+server/data/
 
 # typescript
 *.tsbuildinfo

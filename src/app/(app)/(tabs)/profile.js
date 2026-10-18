@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AppButton from '../../../components/AppButton';
 import Card from '../../../components/Card';
+import ChangePasswordCard from '../../../components/ChangePasswordCard';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import Screen from '../../../components/Screen';
 import ScreenHeader from '../../../components/ScreenHeader';
@@ -15,7 +16,7 @@ import { useMarket } from '../../../context/MarketContext';
 import { usePortfolio } from '../../../context/PortfolioContext';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { STARTING_BALANCE } from '../../../logic/trading';
-import { getErrorMessage, logoutUser } from '../../../services/authService';
+import { getErrorMessage } from '../../../services/authService';
 import { SPEEDS, VOLATILITY_MODES } from '../../../simulation/marketEngine';
 import { useAppTheme } from '../../../theme/ThemeContext';
 import { formatDate, formatMoney } from '../../../utils/format';
@@ -25,23 +26,23 @@ const VOLATILITY_OPTIONS = Object.entries(VOLATILITY_MODES).map(([value, { label
 
 export default function ProfileScreen() {
   const { colors, isDark, toggleTheme } = useAppTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { settings, updateSettings, resetMarket } = useMarket();
-  const { portfolio, reset } = usePortfolio();
+  const { reset } = usePortfolio();
   const { showToast } = useToast();
   const { isDesktop } = useResponsive();
 
   const [dialog, setDialog] = useState(null); // 'reset' | 'logout' | null
   const [busy, setBusy] = useState(false);
 
-  const name = portfolio?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Inwestor';
+  const name = user?.displayName || 'Inwestor';
   const initials = name
     .split(' ')
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
-  const createdAt = portfolio?.createdAt?.toDate?.();
+  const createdAt = user?.createdAt ? new Date(user.createdAt) : null;
 
   async function handleConfirm() {
     setBusy(true);
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
         setDialog(null);
       } else {
         setDialog(null);
-        await logoutUser();
+        await logout();
       }
     } catch (error) {
       showToast(getErrorMessage(error), 'error');
@@ -161,6 +162,13 @@ export default function ProfileScreen() {
     </>
   );
 
+  const securitySection = (
+    <>
+      <SectionTitle icon="key-outline" title="Bezpieczeństwo" />
+      <ChangePasswordCard />
+    </>
+  );
+
   const accountSection = (
     <>
       <SectionTitle icon="person-outline" title="Konto" />
@@ -186,13 +194,17 @@ export default function ProfileScreen() {
             {appearanceSection}
             {accountSection}
           </View>
-          <View style={styles.column}>{simulationSection}</View>
+          <View style={styles.column}>
+            {simulationSection}
+            {securitySection}
+          </View>
         </View>
       ) : (
         <>
           {userSection}
           {appearanceSection}
           {simulationSection}
+          {securitySection}
           {accountSection}
         </>
       )}
@@ -214,7 +226,7 @@ export default function ProfileScreen() {
       <ConfirmDialog
         visible={dialog === 'logout'}
         title="Wylogować się?"
-        message="Twój portfel zostanie zapisany w chmurze — po ponownym zalogowaniu wszystko będzie na swoim miejscu."
+        message="Twój portfel jest zapisany w bazie danych — po ponownym zalogowaniu wszystko będzie na swoim miejscu."
         icon="log-out-outline"
         confirmLabel="Wyloguj"
         loading={busy}

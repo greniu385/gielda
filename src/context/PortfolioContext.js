@@ -1,13 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from './AuthContext';
-import {
-  ensureUserProfile,
-  executeTrade,
-  resetPortfolio,
-  subscribeToPortfolio,
-  subscribeToTransactions,
-} from '../services/portfolioService';
+import { executeTrade, fetchPortfolio, fetchTransactions, resetPortfolio } from '../services/portfolioService';
 
 const PortfolioContext = createContext(null);
 
@@ -18,37 +12,35 @@ export function PortfolioProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Nasłuchiwanie zmian portfela w czasie rzeczywistym.
+  // Wczytanie portfela i historii z serwera po zalogowaniu.
   useEffect(() => {
     if (!user) return undefined;
-    return subscribeToPortfolio(
-      user.uid,
-      (data) => {
-        if (data) {
-          setPortfolio(data);
-          setLoading(false);
-        } else {
-          // Brak dokumentu (np. konto założone ręcznie w konsoli) — tworzymy portfel startowy.
-          ensureUserProfile(user).catch((err) => {
-            setError(err);
-            setLoading(false);
-          });
-        }
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
-      },
-    );
+    let cancelled = false;
+    Promise.all([fetchPortfolio(), fetchTransactions()])
+      .then(([nextPortfolio, nextTransactions]) => {
+        if (cancelled) return;
+        setPortfolio(nextPortfolio);
+        setTransactions(nextTransactions);
+      })
+      .catch((err) => !cancelled && setError(err))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return undefined;
-    return subscribeToTransactions(user.uid, setTransactions, setError);
-  }, [user]);
+  // Po transakcji serwer odsyła nowy stan portfela i zapisaną transakcję.
+  const trade = useCallback(async (order) => {
+    const { portfolio: nextPortfolio, transaction } = await executeTrade(order);
+    setPortfolio(nextPortfolio);
+    setTransactions((list) => [transaction, ...list]);
+    return transaction;
+  }, []);
 
-  const trade = useCallback((order) => executeTrade(user.uid, order), [user]);
-  const reset = useCallback(() => resetPortfolio(user.uid), [user]);
+  const reset = useCallback(async () => {
+    setPortfolio(await resetPortfolio());
+    setTransactions([]);
+  }, []);
 
   const value = useMemo(
     () => ({ portfolio, transactions, loading, error, trade, reset }),

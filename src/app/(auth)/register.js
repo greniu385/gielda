@@ -5,7 +5,8 @@ import { Link } from 'expo-router';
 import AppButton from '../../components/AppButton';
 import AuthScaffold from '../../components/AuthScaffold';
 import TextField from '../../components/TextField';
-import { getErrorMessage, registerUser } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { getErrorMessage } from '../../services/authService';
 import { STARTING_BALANCE } from '../../logic/trading';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { formatMoney } from '../../utils/format';
@@ -20,6 +21,7 @@ const STRENGTH_LABELS = ['Za krótkie', 'Słabe', 'Średnie', 'Silne', 'Bardzo s
 
 export default function RegisterScreen() {
   const { colors } = useAppTheme();
+  const { register } = useAuth();
   const [form, setForm] = useState({ displayName: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState(null);
@@ -45,7 +47,7 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await registerUser(form);
+      await register(form);
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {
