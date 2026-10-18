@@ -1,0 +1,53 @@
+// Paleta kolorów dla trybu ciemnego i jasnego.
+export const darkColors = {
+  background: '#0B0F19',
+  surface: '#141A29',
+  surfaceAlt: '#1B2335',
+  elevated: '#222B40',
+  border: '#263049',
+  text: '#EEF2FA',
+  textMuted: '#8C97AE',
+  textSubtle: '#5D6880',
+  primary: '#6C8CFF',
+  primarySoft: 'rgba(108, 140, 255, 0.16)',
+  gradient: ['#5B6CFF', '#9B5CFF'],
+  heroGradient: ['#2A3A8F', '#5A2D91'],
+  up: '#2BD67B',
+  upSoft: 'rgba(43, 214, 123, 0.14)',
+  down: '#FF5C7A',
+  downSoft: 'rgba(255, 92, 122, 0.14)',
+  warning: '#FFB547',
+  warningSoft: 'rgba(255, 181, 71, 0.14)',
+  onPrimary: '#FFFFFF',
+  overlay: 'rgba(3, 6, 14, 0.7)',
+  shadow: '#000000',
+  tabBar: '#10162299',
+};
+
+export const lightColors = {
+  background: '#F3F5FB',
+  surface: '#FFFFFF',
+  surfaceAlt: '#EDF0F8',
+  elevated: '#FFFFFF',
+  border: '#E1E6F0',
+  text: '#101828',
+  textMuted: '#5F6B84',
+  textSubtle: '#98A2B8',
+  primary: '#4058F2',
+  primarySoft: 'rgba(64, 88, 242, 0.1)',
+  gradient: ['#4058F2', '#8A3FFC'],
+  heroGradient: ['#4058F2', '#7B3FE4'],
+  up: '#12A150',
+  upSoft: 'rgba(18, 161, 80, 0.1)',
+  down: '#E5394F',
+  downSoft: 'rgba(229, 57, 79, 0.1)',
+  warning: '#D98200',
+  warningSoft: 'rgba(217, 130, 0, 0.12)',
+  onPrimary: '#FFFFFF',
+  overlay: 'rgba(16, 24, 40, 0.45)',
+  shadow: '#1D2B53',
+  tabBar: '#FFFFFFEE',
+};
+
+export const radius = { sm: 10, md: 14, lg: 20, xl: 28, pill: 999 };
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

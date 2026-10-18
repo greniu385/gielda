@@ -1,0 +1,109 @@
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
+
+import AppButton from '../../components/AppButton';
+import AuthScaffold from '../../components/AuthScaffold';
+import TextField from '../../components/TextField';
+import { getErrorMessage, loginUser } from '../../services/authService';
+import { useAppTheme } from '../../theme/ThemeContext';
+import { validateEmail } from '../../utils/validation';
+
+export default function LoginScreen() {
+  const { colors } = useAppTheme();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    const nextErrors = {
+      email: validateEmail(email),
+      password: password ? null : 'Podaj hasło.',
+    };
+    setErrors(nextErrors);
+    setFormError(null);
+    if (nextErrors.email || nextErrors.password) return;
+
+    setLoading(true);
+    try {
+      await loginUser({ email, password });
+      // Po zalogowaniu nawigacja przełączy się automatycznie (Stack.Protected w _layout.js).
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <AuthScaffold
+      title="Witaj ponownie 👋"
+      subtitle="Zaloguj się, aby handlować walutami na symulowanym rynku."
+      footer={
+        <Text style={[styles.footerText, { color: colors.textMuted }]}>
+          Nie masz konta?{' '}
+          <Link href="/register" style={[styles.link, { color: colors.primary }]}>
+            Zarejestruj się
+          </Link>
+        </Text>
+      }
+    >
+      <TextField
+        label="E-mail"
+        icon="mail-outline"
+        placeholder="jan.kowalski@email.pl"
+        value={email}
+        onChangeText={(value) => {
+          setEmail(value);
+          setErrors((e) => ({ ...e, email: null }));
+        }}
+        error={errors.email}
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        textContentType="emailAddress"
+      />
+      <TextField
+        label="Hasło"
+        icon="lock-closed-outline"
+        placeholder="••••••••"
+        value={password}
+        onChangeText={(value) => {
+          setPassword(value);
+          setErrors((e) => ({ ...e, password: null }));
+        }}
+        error={errors.password}
+        secureTextEntry
+        autoComplete="password"
+        textContentType="password"
+        onSubmitEditing={handleLogin}
+        returnKeyType="go"
+      />
+
+      <View style={styles.forgotRow}>
+        <Link href="/forgot-password" style={[styles.forgot, { color: colors.primary }]}>
+          Nie pamiętasz hasła?
+        </Link>
+      </View>
+
+      {formError ? (
+        <View style={[styles.formError, { backgroundColor: colors.downSoft }]}>
+          <Text style={[styles.formErrorText, { color: colors.down }]}>{formError}</Text>
+        </View>
+      ) : null}
+
+      <AppButton title="Zaloguj się" icon="log-in-outline" onPress={handleLogin} loading={loading} />
+    </AuthScaffold>
+  );
+}
+
+const styles = StyleSheet.create({
+  forgotRow: { alignItems: 'flex-end', marginTop: -4, marginBottom: 18 },
+  forgot: { fontSize: 14, fontWeight: '600' },
+  formError: { borderRadius: 12, padding: 12, marginBottom: 14 },
+  formErrorText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  footerText: { fontSize: 15 },
+  link: { fontWeight: '700' },
+});

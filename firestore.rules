@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Reguły bezpieczeństwa Cloud Firestore:
+// każdy zalogowany użytkownik ma dostęp wyłącznie do własnego portfela i historii.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+
+      match /transactions/{transactionId} {
+        allow read, create, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
