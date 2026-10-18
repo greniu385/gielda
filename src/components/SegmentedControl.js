@@ -18,7 +18,10 @@ export default function SegmentedControl({ options, value, onChange, activeColor
             onPress={() => onChange(option.value)}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            style={[styles.segment, active && { backgroundColor: activeBg }]}
+            style={({ hovered }) => [
+              styles.segment,
+              active ? { backgroundColor: activeBg } : hovered && { backgroundColor: colors.elevated },
+            ]}
           >
             <Text style={[styles.label, { color: active ? '#FFFFFF' : colors.textMuted }]}>{option.label}</Text>
           </Pressable>

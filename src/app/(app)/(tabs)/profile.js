@@ -13,6 +13,7 @@ import { useToast } from '../../../components/Toast';
 import { useAuth } from '../../../context/AuthContext';
 import { useMarket } from '../../../context/MarketContext';
 import { usePortfolio } from '../../../context/PortfolioContext';
+import { useResponsive } from '../../../hooks/useResponsive';
 import { STARTING_BALANCE } from '../../../logic/trading';
 import { getErrorMessage, logoutUser } from '../../../services/authService';
 import { SPEEDS, VOLATILITY_MODES } from '../../../simulation/marketEngine';
@@ -28,6 +29,7 @@ export default function ProfileScreen() {
   const { settings, updateSettings, resetMarket } = useMarket();
   const { portfolio, reset } = usePortfolio();
   const { showToast } = useToast();
+  const { isDesktop } = useResponsive();
 
   const [dialog, setDialog] = useState(null); // 'reset' | 'logout' | null
   const [busy, setBusy] = useState(false);
@@ -59,10 +61,8 @@ export default function ProfileScreen() {
     }
   }
 
-  return (
-    <Screen scroll>
-      <ScreenHeader title="Profil" subtitle="Konto i ustawienia" />
-
+  const userSection = (
+    <>
       <Card style={styles.userCard}>
         <LinearGradient colors={colors.gradient} style={styles.avatar}>
           <Text style={styles.initials}>{initials}</Text>
@@ -79,7 +79,11 @@ export default function ProfileScreen() {
           ) : null}
         </View>
       </Card>
+    </>
+  );
 
+  const appearanceSection = (
+    <>
       <SectionTitle icon="color-palette-outline" title="Wygląd" />
       <Card>
         <View style={styles.settingRow}>
@@ -101,11 +105,19 @@ export default function ProfileScreen() {
           />
         </View>
       </Card>
+    </>
+  );
 
-      <SectionTitle icon="pulse" title="Symulacja rynku" />
+  const simulationSection = (
+    <>
+      <SectionTitle icon="pulse" title="Symulacja rynku" first={isDesktop} />
       <Card>
         <Text style={[styles.label, { color: colors.textMuted }]}>Prędkość notowań</Text>
-        <SegmentedControl options={SPEED_OPTIONS} value={settings.speed} onChange={(speed) => updateSettings({ speed })} />
+        <SegmentedControl
+          options={SPEED_OPTIONS}
+          value={settings.speed}
+          onChange={(speed) => updateSettings({ speed })}
+        />
 
         <Text style={[styles.label, styles.labelSpaced, { color: colors.textMuted }]}>Zmienność rynku</Text>
         <SegmentedControl
@@ -146,12 +158,44 @@ export default function ProfileScreen() {
           }}
         />
       </Card>
+    </>
+  );
 
+  const accountSection = (
+    <>
       <SectionTitle icon="person-outline" title="Konto" />
       <Card style={styles.accountCard}>
-        <AppButton title="Zresetuj portfel" icon="refresh-circle-outline" variant="dangerSoft" onPress={() => setDialog('reset')} />
+        <AppButton
+          title="Zresetuj portfel"
+          icon="refresh-circle-outline"
+          variant="dangerSoft"
+          onPress={() => setDialog('reset')}
+        />
         <AppButton title="Wyloguj się" icon="log-out-outline" variant="secondary" onPress={() => setDialog('logout')} />
       </Card>
+    </>
+  );
+
+  return (
+    <Screen scroll>
+      <ScreenHeader title="Profil" subtitle="Konto i ustawienia" />
+      {isDesktop ? (
+        <View style={styles.columns}>
+          <View style={styles.column}>
+            {userSection}
+            {appearanceSection}
+            {accountSection}
+          </View>
+          <View style={styles.column}>{simulationSection}</View>
+        </View>
+      ) : (
+        <>
+          {userSection}
+          {appearanceSection}
+          {simulationSection}
+          {accountSection}
+        </>
+      )}
 
       <Text style={[styles.footer, { color: colors.textSubtle }]}>
         Giełda Walut 1.0 · symulacja edukacyjna — wszystkie środki są wirtualne
@@ -181,10 +225,10 @@ export default function ProfileScreen() {
   );
 }
 
-function SectionTitle({ icon, title }) {
+function SectionTitle({ icon, title, first = false }) {
   const { colors } = useAppTheme();
   return (
-    <View style={styles.sectionTitle}>
+    <View style={[styles.sectionTitle, first && styles.sectionTitleFirst]}>
       <Ionicons name={icon} size={17} color={colors.textMuted} />
       <Text style={[styles.sectionText, { color: colors.textMuted }]}>{title.toUpperCase()}</Text>
     </View>
@@ -192,6 +236,8 @@ function SectionTitle({ icon, title }) {
 }
 
 const styles = StyleSheet.create({
+  columns: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
+  column: { flex: 1, minWidth: 0 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   initials: { color: '#FFFFFF', fontSize: 23, fontWeight: '800' },
@@ -200,6 +246,7 @@ const styles = StyleSheet.create({
   email: { fontSize: 14, marginTop: 2 },
   since: { fontSize: 12, marginTop: 4 },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10, marginLeft: 4 },
+  sectionTitleFirst: { marginTop: 0 },
   sectionText: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.8 },
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   settingIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

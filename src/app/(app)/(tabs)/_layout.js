@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { Tabs } from 'expo-router/js-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useResponsive } from '../../../hooks/useResponsive';
 import { useAppTheme } from '../../../theme/ThemeContext';
 
 const TABS = [
@@ -11,11 +12,16 @@ const TABS = [
   { name: 'profile', title: 'Profil', icon: 'person-circle' },
 ];
 
+// Na komputerze dolny pasek jest ukryty — nawigację przejmuje boczne menu (Sidebar).
+const hiddenTabBar = () => null;
+
 export default function TabsLayout() {
   const { colors } = useAppTheme();
+  const { isWide } = useResponsive();
 
   return (
     <Tabs
+      tabBar={isWide ? hiddenTabBar : undefined}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

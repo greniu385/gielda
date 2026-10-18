@@ -1,6 +1,7 @@
 # 💱 Giełda Walut
 
-Mobilna aplikacja w **React Native (Expo)** do handlu walutami na **symulowanym rynku**.
+Aplikacja internetowa **do przeglądarki na komputerze**, napisana w **React Native (Expo + react-native-web)**,
+do handlu walutami na **symulowanym rynku**.
 Użytkownik zakłada konto (**Firebase Authentication**), dostaje 10 000 zł wirtualnych
 środków i kupuje / sprzedaje waluty, których kursy zmieniają się na żywo.
 Portfel i historia transakcji zapisują się w chmurze (**Cloud Firestore**).
@@ -36,27 +37,37 @@ Aplikacja ma **tryb nocny i jasny** przełączany jednym przyciskiem.
 - historia transakcji z filtrem kupno / sprzedaż.
 
 **Wygląd**
-- ciemny i jasny motyw, przełącznik ☀️/🌙 na każdym ekranie (oraz w Profilu),
+- układ pod komputer: boczne menu, tabele kursów i transakcji, kilka kolumn na szerokim ekranie,
+  efekty po najechaniu myszką, tytuły kart w przeglądarce,
+- ciemny i jasny motyw — przełącznik „Ciemny | Jasny” w nagłówku każdej strony (oraz w Profilu),
 - wybór motywu jest zapamiętywany,
-- wykresy kursów (SVG), gradienty, animacje, powiadomienia toast.
+- wykresy kursów (SVG), gradienty, animacje, powiadomienia,
+- w węższym oknie (lub na telefonie) układ automatycznie przechodzi w jedną kolumnę z dolnym menu.
 
 ---
 
 ## 🚀 Uruchomienie
 
-Wymagania: [Node.js](https://nodejs.org) 22.13+ (lub 24) oraz aplikacja **Expo Go** na telefonie
-([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) / [iOS](https://apps.apple.com/app/expo-go/id982107779)).
+Wymagania: [Node.js](https://nodejs.org) 22.13+ (lub 24) i dowolna przeglądarka (Chrome, Edge, Firefox).
 
 ```bash
 npm install
 cp .env.example .env      # potem uzupełnij .env — patrz niżej
-npx expo start
+npm start                 # uruchamia stronę w przeglądarce
 ```
 
-Zeskanuj kod QR aparatem (iOS) lub w Expo Go (Android). Wersję w przeglądarce
-uruchomisz klawiszem `w` albo poleceniem `npm run web`.
+Aplikacja otworzy się pod adresem **http://localhost:8081**. Zmiany w kodzie
+widać od razu po zapisaniu pliku.
 
 > Bez uzupełnionego pliku `.env` aplikacja pokaże ekran „Konfiguracja” z instrukcją.
+
+<details>
+<summary>Dodatkowo: uruchomienie na telefonie</summary>
+
+Ten sam kod działa też jako aplikacja mobilna: `npx expo start`, a potem zeskanuj kod QR
+w aplikacji **Expo Go** ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) /
+[iOS](https://apps.apple.com/app/expo-go/id982107779)).
+</details>
 
 ---
 
@@ -79,7 +90,7 @@ uruchomisz klawiszem `w` albo poleceniem `npm run web`.
    | `messagingSenderId` | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` |
    | `appId`             | `EXPO_PUBLIC_FIREBASE_APP_ID`              |
 
-7. Uruchom aplikację ponownie z czyszczeniem pamięci podręcznej: `npx expo start -c`.
+7. Uruchom aplikację ponownie z czyszczeniem pamięci podręcznej: `npx expo start --web -c`.
 
 Po rejestracji pierwszego użytkownika zobaczysz go w **Authentication → Users**,
 a jego portfel w **Firestore → users**.
@@ -101,6 +112,21 @@ users/{uid}/transactions/{id}
 ```
 
 Reguły bezpieczeństwa pozwalają każdemu użytkownikowi czytać i zapisywać wyłącznie własne dane.
+
+---
+
+## 🌍 Publikacja strony w internecie (opcjonalnie)
+
+Gotową stronę można opublikować za darmo w **Firebase Hosting** (ten sam projekt Firebase):
+
+```bash
+npm run build:web                                   # tworzy folder dist/ ze stroną
+npx firebase-tools login                            # logowanie kontem Google
+npx firebase-tools deploy --only hosting --project <id-projektu>
+```
+
+Strona będzie dostępna pod adresem `https://<id-projektu>.web.app` — wystarczy wysłać link
+nauczycielowi. Konfiguracja hostingu jest już w pliku [`firebase.json`](firebase.json).
 
 ---
 
@@ -132,12 +158,13 @@ src/
 │   ├── _layout.js            ← providery + ochrona tras (Stack.Protected)
 │   ├── setup.js              ← instrukcja, gdy brak konfiguracji Firebase
 │   ├── (auth)/               ← login, register, forgot-password
-│   └── (app)/                ← tylko dla zalogowanych
+│   └── (app)/                ← tylko dla zalogowanych (+ boczne menu)
 │       ├── (tabs)/           ← Rynek, Portfel, Historia, Profil
 │       └── currency/[code].js← wykres + kupno/sprzedaż waluty
-├── components/               ← przyciski, pola, wykresy, karty, dialogi…
+├── components/               ← boczne menu, przyciski, pola, wykresy, tabele, dialogi…
 ├── config/firebase.js        ← inicjalizacja Firebase (dane z .env)
 ├── context/                  ← stan globalny: Auth, Market, Portfolio
+├── hooks/useResponsive.js    ← układ zależny od szerokości okna
 ├── logic/trading.js          ← obliczenia portfela i transakcji
 ├── services/                 ← Firebase Auth, Firestore, API NBP
 ├── simulation/               ← silnik rynku, waluty, wiadomości
@@ -149,7 +176,7 @@ firestore.rules               ← reguły bezpieczeństwa bazy
 
 ## 🛠️ Technologie
 
-Expo SDK 58 · React Native 0.88 · Expo Router · Firebase 13 (Auth + Firestore) ·
+Expo SDK 58 · React Native 0.88 + react-native-web · Expo Router · Firebase 13 (Auth + Firestore) ·
 react-native-svg · expo-linear-gradient · AsyncStorage · API NBP
 
 ## ✅ Testy i jakość kodu
@@ -171,7 +198,7 @@ i w pliku `.env` ustawić dowolne wartości `EXPO_PUBLIC_FIREBASE_*` (np. `PROJE
 
 ```
 EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true
-EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=localhost   # na telefonie: adres IP komputera
+EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=localhost
 ```
 
 ---

@@ -40,6 +40,7 @@ export default function LoginScreen() {
   return (
     <AuthScaffold
       title="Witaj ponownie 👋"
+      pageTitle="Logowanie"
       subtitle="Zaloguj się, aby handlować walutami na symulowanym rynku."
       footer={
         <Text style={[styles.footerText, { color: colors.textMuted }]}>

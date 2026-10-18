@@ -3,6 +3,7 @@ import { Animated, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useResponsive } from '../hooks/useResponsive';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NATIVE_DRIVER } from '../utils/animation';
 
@@ -14,6 +15,7 @@ const ICONS = { success: 'checkmark-circle', error: 'alert-circle', info: 'infor
 export function ToastProvider({ children }) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { isWide } = useResponsive();
   const [toast, setToast] = useState(null);
   const [anim] = useState(() => new Animated.Value(0));
   const timer = useRef(null);
@@ -42,14 +44,15 @@ export function ToastProvider({ children }) {
         <Animated.View
           style={[
             styles.toast,
+            isWide ? styles.toastWide : styles.toastNarrow,
             {
               pointerEvents: 'none',
-              top: insets.top + 10,
+              ...(isWide ? { bottom: insets.bottom + 28 } : { top: insets.top + 10 }),
               backgroundColor: colors.elevated,
               borderColor: accent,
               shadowColor: colors.shadow,
               opacity: anim,
-              transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) }],
+              transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [isWide ? 40 : -40, 0] }) }],
             },
           ]}
         >
@@ -70,10 +73,6 @@ export function useToast() {
 const styles = StyleSheet.create({
   toast: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    alignSelf: 'center',
-    maxWidth: 520,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -86,5 +85,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
+  // Na telefonie powiadomienie wysuwa się u góry, na komputerze — w prawym dolnym rogu.
+  toastNarrow: { left: 16, right: 16 },
+  toastWide: { right: 28, width: 420 },
   text: { flex: 1, fontSize: 15, fontWeight: '600' },
 });

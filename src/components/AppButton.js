@@ -11,11 +11,11 @@ export default function AppButton({ title, onPress, variant = 'primary', icon, l
 
   const palette = {
     primary: { bg: null, fg: colors.onPrimary },
-    secondary: { bg: colors.surfaceAlt, fg: colors.text, border: colors.border },
+    secondary: { bg: colors.surfaceAlt, fg: colors.text, border: colors.border, hoverBg: colors.elevated },
     success: { bg: colors.up, fg: '#FFFFFF' },
     danger: { bg: colors.down, fg: '#FFFFFF' },
     dangerSoft: { bg: colors.downSoft, fg: colors.down },
-    ghost: { bg: 'transparent', fg: colors.primary },
+    ghost: { bg: 'transparent', fg: colors.primary, hoverBg: colors.primarySoft },
   }[variant];
 
   const content = (
@@ -37,11 +37,14 @@ export default function AppButton({ title, onPress, variant = 'primary', icon, l
       disabled={inactive}
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy: loading }}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }) => [
         styles.base,
-        palette.bg !== null && { backgroundColor: palette.bg },
+        palette.bg !== null && { backgroundColor: hovered && palette.hoverBg ? palette.hoverBg : palette.bg },
         palette.border && { borderWidth: StyleSheet.hairlineWidth, borderColor: palette.border },
-        { opacity: disabled ? 0.45 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+        {
+          opacity: disabled ? 0.45 : pressed ? 0.85 : hovered && !palette.hoverBg ? 0.9 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        },
         style,
       ]}
     >

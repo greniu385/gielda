@@ -12,7 +12,7 @@ const STEPS = [
   'Skopiuj plik .env.example jako .env i wklej do niego dane z firebaseConfig.',
   'W zakładce Authentication → Sign-in method włącz logowanie „E-mail/hasło”.',
   'Utwórz bazę Firestore Database i wklej reguły z pliku firestore.rules.',
-  'Uruchom aplikację ponownie: npx expo start -c',
+  'Uruchom aplikację ponownie: npx expo start --web -c',
 ];
 
 // Ekran wyświetlany, gdy w pliku .env brakuje danych projektu Firebase.

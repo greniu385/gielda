@@ -56,6 +56,7 @@ export default function RegisterScreen() {
   return (
     <AuthScaffold
       title="Załóż konto"
+      pageTitle="Rejestracja"
       subtitle={`Na start otrzymasz ${formatMoney(STARTING_BALANCE)} wirtualnych środków do inwestowania.`}
       footer={
         <Text style={[styles.footerText, { color: colors.textMuted }]}>

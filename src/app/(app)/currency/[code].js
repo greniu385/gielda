@@ -15,13 +15,21 @@ import SegmentedControl from '../../../components/SegmentedControl';
 import TextField from '../../../components/TextField';
 import { useToast } from '../../../components/Toast';
 import { useMarket } from '../../../context/MarketContext';
+import { useResponsive } from '../../../hooks/useResponsive';
 import { usePortfolio } from '../../../context/PortfolioContext';
 import { BASE_CURRENCY, floor2, getBalance, getMaxBuyAmount, round2 } from '../../../logic/trading';
 import { getCurrency } from '../../../simulation/currencies';
 import { getAskPrice, getBidPrice, getChangePercent } from '../../../simulation/marketEngine';
 import { getErrorMessage } from '../../../services/authService';
 import { useAppTheme } from '../../../theme/ThemeContext';
-import { formatMoney, formatNumber, formatPercent, formatRate, formatSignedMoney, parseAmount } from '../../../utils/format';
+import {
+  formatMoney,
+  formatNumber,
+  formatPercent,
+  formatRate,
+  formatSignedMoney,
+  parseAmount,
+} from '../../../utils/format';
 
 const QUICK_AMOUNTS = [0.25, 0.5, 0.75, 1];
 
@@ -38,6 +46,9 @@ function CurrencyDetails({ currency }) {
   const { quotes, news } = useMarket();
   const { portfolio, trade } = usePortfolio();
   const { showToast } = useToast();
+  const { width, isDesktop } = useResponsive();
+  const twoColumns = isDesktop;
+  const statsInOneRow = width >= 1400;
 
   const [side, setSide] = useState('buy');
   const [inputMode, setInputMode] = useState('units'); // 'units' = w walucie, 'pln' = w złotówkach
@@ -64,7 +75,8 @@ function CurrencyDetails({ currency }) {
 
   let validationError = null;
   if (amountText && !Number.isFinite(parsed)) validationError = 'Wpisz poprawną liczbę, np. 150,50.';
-  else if (side === 'buy' && total > cash) validationError = `Brakuje ${formatMoney(total - cash)} — masz ${formatMoney(cash)}.`;
+  else if (side === 'buy' && total > cash)
+    validationError = `Brakuje ${formatMoney(total - cash)} — masz ${formatMoney(cash)}.`;
   else if (side === 'sell' && units > held) validationError = `Masz tylko ${formatNumber(held)} ${currency.code}.`;
   else if (amountText && units <= 0) validationError = 'Kwota jest za mała.';
 
@@ -103,162 +115,191 @@ function CurrencyDetails({ currency }) {
   const relatedNews = news.filter((n) => n.impacts[currency.code] !== undefined).slice(0, 3);
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
+  const priceCard = (
+    <Card>
+      <View style={styles.priceRow}>
+        <CurrencyAvatar code={currency.code} size={52} />
+        <View style={styles.priceInfo}>
+          <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Kurs średni</Text>
+          <Text style={[styles.price, { color: colors.text }]}>{formatRate(quote.mid)} zł</Text>
+        </View>
+        <View style={styles.changeBox}>
+          <ChangeBadge value={change} />
+          <Text style={[styles.changeHint, { color: colors.textSubtle }]}>od otwarcia</Text>
+        </View>
+      </View>
+      <View style={styles.chart}>
+        <LineChart data={quote.history} color={trendColor} height={twoColumns ? 300 : 220} />
+      </View>
+      <View style={styles.statsGrid}>
+        <Stat wide={statsInOneRow} label="Kupisz po" value={formatRate(ask)} color={colors.up} />
+        <Stat wide={statsInOneRow} label="Sprzedasz po" value={formatRate(bid)} color={colors.down} />
+        <Stat wide={statsInOneRow} label="Spread" value={formatPercent(quote.spread * 100, { sign: false })} />
+        <Stat wide={statsInOneRow} label="Otwarcie" value={formatRate(quote.open)} />
+        <Stat wide={statsInOneRow} label="Max sesji" value={formatRate(quote.high)} />
+        <Stat wide={statsInOneRow} label="Min sesji" value={formatRate(quote.low)} />
+      </View>
+    </Card>
+  );
+
+  const positionCard =
+    held > 0 ? (
+      <Card style={styles.section}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Twoja pozycja</Text>
+        <View style={styles.positionRow}>
+          <View>
+            <Text style={[styles.positionAmount, { color: colors.text }]}>
+              {formatNumber(held)} {currency.code}
+            </Text>
+            <Text style={[styles.muted, { color: colors.textMuted }]}>
+              ≈ {formatMoney(positionValue)} · śr. kurs zakupu {avgPrice ? formatRate(avgPrice) : '—'}
+            </Text>
+          </View>
+          <Text style={[styles.positionPnl, { color: positionPnl >= 0 ? colors.up : colors.down }]}>
+            {formatSignedMoney(positionPnl)}
+          </Text>
+        </View>
+      </Card>
+    ) : null;
+
+  const tradeCard = (
+    <Card style={!twoColumns && styles.section}>
+      <Text style={[styles.cardTitle, { color: colors.text }]}>Złóż zlecenie</Text>
+      <SegmentedControl
+        options={[
+          { value: 'buy', label: 'Kup' },
+          { value: 'sell', label: 'Sprzedaj' },
+        ]}
+        value={side}
+        onChange={(value) => {
+          setSide(value);
+          setAmountText('');
+        }}
+        activeColors={{ buy: colors.up, sell: colors.down }}
+      />
+
+      <View style={styles.balanceRow}>
+        <Text style={[styles.muted, { color: colors.textMuted }]}>
+          {side === 'buy' ? 'Dostępne środki:' : 'Dostępne do sprzedaży:'}
+        </Text>
+        <Text style={[styles.balanceValue, { color: colors.text }]}>
+          {side === 'buy' ? formatMoney(cash) : `${formatNumber(held)} ${currency.code}`}
+        </Text>
+      </View>
+
+      <View style={styles.modeRow}>
+        <Text style={[styles.muted, { color: colors.textMuted }]}>Kwota w:</Text>
+        {['units', 'pln'].map((mode) => {
+          const active = inputMode === mode;
+          return (
+            <Pressable
+              key={mode}
+              onPress={() => changeInputMode(mode)}
+              style={[
+                styles.modeChip,
+                {
+                  backgroundColor: active ? colors.primarySoft : 'transparent',
+                  borderColor: active ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.modeText, { color: active ? colors.primary : colors.textMuted }]}>
+                {mode === 'units' ? currency.code : 'PLN'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <TextField
+        placeholder="0,00"
+        value={amountText}
+        onChangeText={setAmountText}
+        keyboardType="decimal-pad"
+        icon="cash-outline"
+        error={validationError}
+        returnKeyType="done"
+        onSubmitEditing={handleTrade}
+        style={styles.amountField}
+      />
+
+      <View style={styles.quickRow}>
+        {QUICK_AMOUNTS.map((fraction) => (
+          <Pressable
+            key={fraction}
+            onPress={() => setQuickAmount(fraction)}
+            style={({ pressed, hovered }) => [
+              styles.quick,
+              {
+                backgroundColor: pressed || hovered ? colors.elevated : colors.surfaceAlt,
+                borderColor: hovered ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.quickText, { color: colors.text }]}>
+              {fraction === 1 ? 'MAX' : `${fraction * 100}%`}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.summary, { backgroundColor: colors.surfaceAlt }]}>
+        <SummaryRow label="Kurs transakcji" value={`${formatRate(rate)} zł`} />
+        <SummaryRow label="Ilość" value={`${formatNumber(units)} ${currency.code}`} />
+        <SummaryRow label={side === 'buy' ? 'Zapłacisz' : 'Otrzymasz'} value={formatMoney(total)} bold />
+      </View>
+
+      <AppButton
+        title={side === 'buy' ? `Kup ${currency.code}` : `Sprzedaj ${currency.code}`}
+        icon={side === 'buy' ? 'arrow-down' : 'arrow-up'}
+        variant={side === 'buy' ? 'success' : 'danger'}
+        onPress={handleTrade}
+        loading={submitting}
+        disabled={!canSubmit}
+      />
+      <Text style={[styles.disclaimer, { color: colors.textSubtle }]}>
+        Kurs zmienia się na żywo — transakcja zostanie wykonana po kursie z chwili kliknięcia.
+      </Text>
+    </Card>
+  );
+
+  const newsSection = relatedNews.length ? (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Wiadomości o {currency.code}</Text>
+      {relatedNews.map((item) => (
+        <NewsItem key={item.id} news={item} />
+      ))}
+    </View>
+  ) : null;
+
   return (
     <Screen scroll edges={['top', 'bottom']}>
       <ScreenHeader title={`${currency.code}/PLN`} subtitle={currency.name} onBack={goBack} />
-
-      <Card>
-        <View style={styles.priceRow}>
-          <CurrencyAvatar code={currency.code} size={52} />
-          <View style={styles.priceInfo}>
-            <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Kurs średni</Text>
-            <Text style={[styles.price, { color: colors.text }]}>{formatRate(quote.mid)} zł</Text>
+      {twoColumns ? (
+        <View style={styles.columns}>
+          <View style={styles.mainColumn}>
+            {priceCard}
+            {positionCard}
+            {newsSection}
           </View>
-          <View style={styles.changeBox}>
-            <ChangeBadge value={change} />
-            <Text style={[styles.changeHint, { color: colors.textSubtle }]}>od otwarcia</Text>
-          </View>
+          <View style={styles.sideColumn}>{tradeCard}</View>
         </View>
-        <View style={styles.chart}>
-          <LineChart data={quote.history} color={trendColor} height={190} />
-        </View>
-        <View style={styles.statsGrid}>
-          <Stat label="Kupisz po" value={formatRate(ask)} color={colors.up} />
-          <Stat label="Sprzedasz po" value={formatRate(bid)} color={colors.down} />
-          <Stat label="Spread" value={formatPercent(quote.spread * 100, { sign: false })} />
-          <Stat label="Otwarcie" value={formatRate(quote.open)} />
-          <Stat label="Max sesji" value={formatRate(quote.high)} />
-          <Stat label="Min sesji" value={formatRate(quote.low)} />
-        </View>
-      </Card>
-
-      {held > 0 ? (
-        <Card style={styles.section}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Twoja pozycja</Text>
-          <View style={styles.positionRow}>
-            <View>
-              <Text style={[styles.positionAmount, { color: colors.text }]}>
-                {formatNumber(held)} {currency.code}
-              </Text>
-              <Text style={[styles.muted, { color: colors.textMuted }]}>
-                ≈ {formatMoney(positionValue)} · śr. kurs zakupu {avgPrice ? formatRate(avgPrice) : '—'}
-              </Text>
-            </View>
-            <Text style={[styles.positionPnl, { color: positionPnl >= 0 ? colors.up : colors.down }]}>
-              {formatSignedMoney(positionPnl)}
-            </Text>
-          </View>
-        </Card>
-      ) : null}
-
-      <Card style={styles.section}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Złóż zlecenie</Text>
-        <SegmentedControl
-          options={[
-            { value: 'buy', label: 'Kup' },
-            { value: 'sell', label: 'Sprzedaj' },
-          ]}
-          value={side}
-          onChange={(value) => {
-            setSide(value);
-            setAmountText('');
-          }}
-          activeColors={{ buy: colors.up, sell: colors.down }}
-        />
-
-        <View style={styles.balanceRow}>
-          <Text style={[styles.muted, { color: colors.textMuted }]}>
-            {side === 'buy' ? 'Dostępne środki:' : 'Dostępne do sprzedaży:'}
-          </Text>
-          <Text style={[styles.balanceValue, { color: colors.text }]}>
-            {side === 'buy' ? formatMoney(cash) : `${formatNumber(held)} ${currency.code}`}
-          </Text>
-        </View>
-
-        <View style={styles.modeRow}>
-          <Text style={[styles.muted, { color: colors.textMuted }]}>Kwota w:</Text>
-          {['units', 'pln'].map((mode) => {
-            const active = inputMode === mode;
-            return (
-              <Pressable
-                key={mode}
-                onPress={() => changeInputMode(mode)}
-                style={[styles.modeChip, { backgroundColor: active ? colors.primarySoft : 'transparent', borderColor: active ? colors.primary : colors.border }]}
-              >
-                <Text style={[styles.modeText, { color: active ? colors.primary : colors.textMuted }]}>
-                  {mode === 'units' ? currency.code : 'PLN'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <TextField
-          placeholder="0,00"
-          value={amountText}
-          onChangeText={setAmountText}
-          keyboardType="decimal-pad"
-          icon="cash-outline"
-          error={validationError}
-          returnKeyType="done"
-          onSubmitEditing={handleTrade}
-          style={styles.amountField}
-        />
-
-        <View style={styles.quickRow}>
-          {QUICK_AMOUNTS.map((fraction) => (
-            <Pressable
-              key={fraction}
-              onPress={() => setQuickAmount(fraction)}
-              style={({ pressed }) => [
-                styles.quick,
-                { backgroundColor: pressed ? colors.elevated : colors.surfaceAlt, borderColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.quickText, { color: colors.text }]}>{fraction === 1 ? 'MAX' : `${fraction * 100}%`}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={[styles.summary, { backgroundColor: colors.surfaceAlt }]}>
-          <SummaryRow label="Kurs transakcji" value={`${formatRate(rate)} zł`} />
-          <SummaryRow label="Ilość" value={`${formatNumber(units)} ${currency.code}`} />
-          <SummaryRow
-            label={side === 'buy' ? 'Zapłacisz' : 'Otrzymasz'}
-            value={formatMoney(total)}
-            bold
-          />
-        </View>
-
-        <AppButton
-          title={side === 'buy' ? `Kup ${currency.code}` : `Sprzedaj ${currency.code}`}
-          icon={side === 'buy' ? 'arrow-down' : 'arrow-up'}
-          variant={side === 'buy' ? 'success' : 'danger'}
-          onPress={handleTrade}
-          loading={submitting}
-          disabled={!canSubmit}
-        />
-        <Text style={[styles.disclaimer, { color: colors.textSubtle }]}>
-          Kurs zmienia się na żywo — transakcja zostanie wykonana po kursie z chwili kliknięcia.
-        </Text>
-      </Card>
-
-      {relatedNews.length ? (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Wiadomości o {currency.code}</Text>
-          {relatedNews.map((item) => (
-            <NewsItem key={item.id} news={item} />
-          ))}
-        </View>
-      ) : null}
+      ) : (
+        <>
+          {priceCard}
+          {positionCard}
+          {tradeCard}
+          {newsSection}
+        </>
+      )}
     </Screen>
   );
 }
 
-function Stat({ label, value, color }) {
+function Stat({ label, value, color, wide }) {
   const { colors } = useAppTheme();
   return (
-    <View style={[styles.stat, { backgroundColor: colors.surfaceAlt }]}>
+    <View style={[styles.stat, wide && styles.statWide, { backgroundColor: colors.surfaceAlt }]}>
       <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
       <Text style={[styles.statValue, { color: color ?? colors.text }]}>{value}</Text>
     </View>
@@ -276,6 +317,9 @@ function SummaryRow({ label, value, bold }) {
 }
 
 const styles = StyleSheet.create({
+  columns: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
+  mainColumn: { flex: 1, minWidth: 0 },
+  sideColumn: { width: 400 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   priceInfo: { flex: 1 },
   priceLabel: { fontSize: 13, fontWeight: '600' },
@@ -285,6 +329,7 @@ const styles = StyleSheet.create({
   chart: { marginTop: 16, marginHorizontal: -4 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
   stat: { flexGrow: 1, flexBasis: '30%', borderRadius: 12, padding: 10 },
+  statWide: { flexBasis: '15%', padding: 12 },
   statLabel: { fontSize: 11.5, fontWeight: '600' },
   statValue: { fontSize: 14.5, fontWeight: '800', marginTop: 3, fontVariant: ['tabular-nums'] },
   section: { marginTop: 16 },

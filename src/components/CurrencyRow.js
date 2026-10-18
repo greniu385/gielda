@@ -1,15 +1,27 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../theme/ThemeContext';
 import { getCurrency } from '../simulation/currencies';
-import { getChangePercent } from '../simulation/marketEngine';
+import { getAskPrice, getBidPrice, getChangePercent } from '../simulation/marketEngine';
 import { formatRate } from '../utils/format';
 import ChangeBadge from './ChangeBadge';
 import CurrencyAvatar from './CurrencyAvatar';
 import Sparkline from './Sparkline';
 
-function CurrencyRow({ quote, onPress }) {
+// Ile kolumn tabeli walut zmieści się w danej szerokości (w pikselach):
+// 'full' — z wykresem, 'medium' — bez wykresu, null — zwykła lista jak na telefonie.
+export function getTableColumns(width) {
+  if (width >= 860) return 'full';
+  if (width >= 680) return 'medium';
+  return null;
+}
+
+// Wiersz listy walut. `columns` — wersja tabelaryczna na komputer
+// (dodatkowe kolumny z kursem kupna i sprzedaży).
+function CurrencyRow({ quote, onPress, columns = null }) {
+  const wide = Boolean(columns);
   const { colors } = useAppTheme();
   const currency = getCurrency(quote.code);
   const change = getChangePercent(quote);
@@ -20,28 +32,67 @@ function CurrencyRow({ quote, onPress }) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${currency.name}, kurs ${formatRate(quote.mid)} złotych`}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }) => [
         styles.row,
-        { backgroundColor: pressed ? colors.surfaceAlt : colors.surface, borderColor: colors.border },
+        wide && styles.rowWide,
+        {
+          backgroundColor: pressed || hovered ? colors.surfaceAlt : colors.surface,
+          borderColor: hovered ? colors.primary : colors.border,
+        },
       ]}
     >
-      <CurrencyAvatar code={quote.code} />
-      <View style={styles.info}>
+      <CurrencyAvatar code={quote.code} size={wide ? 40 : 44} />
+      <View style={[styles.info, wide && styles.infoWide]}>
         <Text style={[styles.code, { color: colors.text }]}>{quote.code}</Text>
         <Text style={[styles.name, { color: colors.textMuted }]} numberOfLines={1}>
           {currency.name}
         </Text>
       </View>
-      <Sparkline data={quote.history.slice(-40)} color={trendColor} />
-      <View style={styles.price}>
-        <Text style={[styles.rate, { color: colors.text }]}>{formatRate(quote.mid)}</Text>
-        <ChangeBadge value={change} size="sm" />
-      </View>
+      {wide ? (
+        <>
+          {columns === 'full' ? (
+            <Sparkline data={quote.history.slice(-60)} color={trendColor} width={150} height={36} />
+          ) : null}
+          <Text style={[styles.cell, styles.cellStrong, { color: colors.text }]}>{formatRate(quote.mid)}</Text>
+          <Text style={[styles.cell, { color: colors.up }]}>{formatRate(getAskPrice(quote))}</Text>
+          <Text style={[styles.cell, { color: colors.down }]}>{formatRate(getBidPrice(quote))}</Text>
+          <View style={styles.changeCell}>
+            <ChangeBadge value={change} size="sm" />
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+        </>
+      ) : (
+        <>
+          <Sparkline data={quote.history.slice(-40)} color={trendColor} />
+          <View style={styles.price}>
+            <Text style={[styles.rate, { color: colors.text }]}>{formatRate(quote.mid)}</Text>
+            <ChangeBadge value={change} size="sm" />
+          </View>
+        </>
+      )}
     </Pressable>
   );
 }
 
 export default memo(CurrencyRow);
+
+// Nagłówek tabeli walut (tylko wersja na komputer) — szerokości kolumn jak w wierszu.
+export function CurrencyTableHeader({ columns }) {
+  const { colors } = useAppTheme();
+  const label = [styles.headerLabel, { color: colors.textSubtle }];
+  return (
+    <View style={styles.header}>
+      <View style={{ width: 40 }} />
+      <Text style={[label, styles.info, styles.infoWide]}>WALUTA</Text>
+      {columns === 'full' ? <Text style={[label, { width: 150 }]}>OSTATNIE NOTOWANIA</Text> : null}
+      <Text style={[styles.cell, label]}>KURS ŚREDNI</Text>
+      <Text style={[styles.cell, label]}>KUPISZ PO</Text>
+      <Text style={[styles.cell, label]}>SPRZEDASZ PO</Text>
+      <Text style={[styles.changeCell, label]}>ZMIANA</Text>
+      <View style={{ width: 18 }} />
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   row: {
@@ -53,9 +104,16 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
+  rowWide: { gap: 16, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 16, marginBottom: 8 },
   info: { flex: 1, minWidth: 0 },
+  infoWide: { minWidth: 120 },
   code: { fontSize: 16, fontWeight: '800' },
   name: { fontSize: 12.5, marginTop: 2 },
   price: { alignItems: 'flex-end', gap: 4, minWidth: 82 },
   rate: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  cell: { width: 104, textAlign: 'right', fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  cellStrong: { fontWeight: '800' },
+  changeCell: { width: 86, alignItems: 'flex-end', textAlign: 'right' },
+  header: { flexDirection: 'row', alignItems: 'flex-end', gap: 16, paddingHorizontal: 19, marginBottom: 8 },
+  headerLabel: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.4 },
 });
